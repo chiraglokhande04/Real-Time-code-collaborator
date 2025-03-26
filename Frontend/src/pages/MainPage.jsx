@@ -4,6 +4,7 @@ import SlideBar from "../components/SlideBar";
 import CodeEditor from "../components/CodeEditor";
 import TerminalComponent from "../components/TerminalComponent";
 
+
 const MainPage = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [files, setFiles] = useState([]);
