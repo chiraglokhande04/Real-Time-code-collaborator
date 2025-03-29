@@ -1,16 +1,21 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import NavBar from "../components/NavBar";
 import SlideBar from "../components/SlideBar";
 import CodeEditor from "../components/CodeEditor";
 import TerminalComponent from "../components/TerminalComponent";
+import {useParams} from "react-router-dom";
+import {useSocket} from "../context/socketContext";
 
 
 const MainPage = () => {
+  const {id} = useParams();
   const [activeTab, setActiveTab] = useState(null);
   const [files, setFiles] = useState([]);
   const [openFiles, setOpenFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [code, setCode] = useState("// Write your code here...");
+  const socket = useSocket();
+
 
   // Handle sidebar tab clicks
   const handleTabClick = (tab) => {
@@ -39,6 +44,16 @@ const MainPage = () => {
     setSelectedFile(file);
   };
 
+
+useEffect(()=>{
+  const handleRoomUsers = (roomId,callback) => {
+    socket.emit("get-room-users",roomId, (users)=>{
+      console.log('Users in Room: ',users);
+    });
+  }
+
+  handleRoomUsers(id);
+},[id]);
   return (
     <div className="h-screen flex flex-col">
       {/* Navbar */}

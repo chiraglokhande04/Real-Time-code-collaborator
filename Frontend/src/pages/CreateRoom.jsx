@@ -46,13 +46,7 @@ const CreateRoom = () => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-        <input
-          type="text"
-          placeholder="Enter ROOM ID"
-          className="w-full p-2 mt-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+   
 
         <div className="flex justify-between mt-8">
           <button

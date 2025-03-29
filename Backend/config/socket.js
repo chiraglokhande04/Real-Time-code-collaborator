@@ -33,6 +33,14 @@ const setupSocket = (server) => {
          console.log('Room Not Found');
       })
 
+      socket.emit("get-room-users",(roomId,callback)=>{  
+        if(rooms[roomId]){
+          callback(rooms[roomId].users);
+        }else{
+          callback([])
+        }
+      });
+
       socket.on('code-change', ({ roomId, newCode }) => {
         rooms[roomId].content = newCode;
         socket.to(roomId).emit('update-code', newCode);
