@@ -6,7 +6,7 @@ import toast, { Toaster } from "react-hot-toast";
 const CreateRoom = () => {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
-  const socket = useSocket();// ✅ Use the global socket reference
+  const socket = useSocket(); // ✅ Use the global socket reference
   const navigate = useNavigate();
 
   const createRoom = () => {
@@ -35,12 +35,21 @@ const CreateRoom = () => {
     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
       <Toaster />
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 h-90 text-center">
-        <h2 className="text-2xl font-semibold my-4 mt-5">Create or Join a Room</h2>
+        <h2 className="text-2xl font-semibold my-4 mt-5">
+          Create or Join a Room
+        </h2>
 
         <input
           type="text"
           placeholder="Enter Username"
           className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Enter ROOM ID"
+          className="w-full p-2 mt-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
