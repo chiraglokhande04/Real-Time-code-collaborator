@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaFileAlt, FaComment, FaVideo } from "react-icons/fa";
 import { useDropzone } from "react-dropzone";
 import ChatBox from "./ChatBox";
+import VoiceCall from "./VoiceCall";
 
 const SlideBar = ({ activeTab, handleTabClick, onFileUpload, files, onSelectFile }) => {
   const [messages, setMessages] = useState([]);
@@ -59,7 +60,7 @@ const SlideBar = ({ activeTab, handleTabClick, onFileUpload, files, onSelectFile
         {activeTab === "chat" && <ChatBox/>}
 
         {/* Video Call */}
-        {activeTab === "video" && <div className="p-3">Video Call Feature Here</div>}
+        {activeTab === "video" && <VoiceCall/>}
       </div>
     </div>
   );

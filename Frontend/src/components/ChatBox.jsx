@@ -26,7 +26,7 @@ const ChatBox = () => {
   };
 
   return (
-    <div className="flex flex-col w-96 h-135 border border-gray-700 rounded-lg bg-gray-900">
+    <div className="flex flex-col w-96 h-130 border border-gray-700 rounded-lg bg-gray-900">
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {messages.map((msg, index) => (
