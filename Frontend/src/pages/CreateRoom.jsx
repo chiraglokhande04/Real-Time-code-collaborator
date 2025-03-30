@@ -15,7 +15,7 @@ const CreateRoom = () => {
       return;
     }
 
-    socket.emit("create-room");
+    socket.emit("create-room",username);
 
     // ✅ Listen for room-created event (only once)
     socket.once("room-created", (roomId) => {

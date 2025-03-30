@@ -6,9 +6,8 @@ import toast, { Toaster } from "react-hot-toast";
 const JoinRoom = () => {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
-  const socket = useSocket(); // ✅ Use the global socket reference
+  const socket = useSocket(); // ✅ Use global socket reference
   const navigate = useNavigate();
-
 
   useEffect(() => {
     if (!socket) return;
@@ -17,38 +16,38 @@ const JoinRoom = () => {
       console.log("✅ Received roomId:", roomId);
       toast.success("🎉 Room Joined!");
       navigate(`/room/${roomId}`);
-    }
-   
+    };
+
     socket.on("room-joined", handleRoomJoined);
     return () => {
       socket.off("room-joined", handleRoomJoined);
     };
-  }, [roomId]);
+  }, [socket, navigate]);
 
   const joinRoom = () => {
     if (!socket) {
       toast.error("⚠️ Socket not connected!");
       return;
     }
-
-    socket.emit("join-room",roomId); // ✅ Emit join-room event
-
-    // ✅ Listen for room-created event (only once)
-    socket.once("room-joined", (roomId) => {
-      console.log("✅ Received roomId:", roomId);
-      toast.success("🎉 Room Created!");
-    });
+  
+    const trimmedUsername = username.trim();
+    const trimmedRoomId = roomId.trim();
+  
+    if (!trimmedUsername || !trimmedRoomId) {
+      toast.error("⚠️ Username and Room ID are required!");
+      return;
+    }
+  
+    console.log("📡 Emitting join-room:", { username: trimmedUsername, roomId: trimmedRoomId });
+  
+    socket.emit("join-room", trimmedUsername, trimmedRoomId); // Ensure correct format
   };
-
-
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
       <Toaster />
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 h-90 text-center">
-        <h2 className="text-2xl font-semibold my-4 mt-5">
-          Create or Join a Room
-        </h2>
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 text-center">
+        <h2 className="text-2xl font-semibold my-4">Join a Room</h2>
 
         <input
           type="text"
@@ -57,19 +56,18 @@ const JoinRoom = () => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-         <input
+        <input
           type="text"
-          placeholder="Enter Room Id"
-          className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+          placeholder="Enter Room ID"
+          className="w-full p-2 mt-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
           value={roomId}
           onChange={(e) => setRoomId(e.target.value)}
         />
-   
 
-        <div className="flex justify-between mt-8">
+        <div className="mt-6">
           <button
             onClick={joinRoom}
-            className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg"
+            className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg w-full"
           >
             Join Room
           </button>
