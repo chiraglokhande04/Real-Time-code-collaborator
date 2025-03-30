@@ -69,10 +69,35 @@ const MainPage = () => {
     };
   
     socket.on("update-users", handleUsersUpdate);
+  
+    socket.emit("get-room-content", id, (content) => {
+      setCode(content);
+    });
+  
     return () => {
       socket.off("update-users", handleUsersUpdate);
     };
+  }, [socket, id]);
+  
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleCodeUpdate = (newCode) => {
+      setCode(newCode);
+    };
+  
+    socket.on("update-code", handleCodeUpdate);
+  
+    return () => {
+      socket.off("update-code", handleCodeUpdate);
+    };
   }, [socket]);
+  
+  const handleCodeChange = (newCode) => {
+    setCode(newCode);
+    socket.emit("code-change", { roomId: id, newCode });
+  };
+  
 
   return (
     <div className="h-screen flex flex-col">
@@ -100,6 +125,8 @@ const MainPage = () => {
               openFiles={openFiles}
               setOpenFiles={setOpenFiles}
               setSelectedFile={setSelectedFile}
+              onCodeChange={handleCodeChange}
+            
             />
           </div>
 

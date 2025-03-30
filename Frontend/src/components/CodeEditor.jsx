@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
 
-const CodeEditor = ({ code, setCode, activeFile }) => {
+const CodeEditor = ({ code,  activeFile ,onCodeChange}) => {
   const [fontSize, setFontSize] = useState(14);
 
   // Function to detect language based on file extension
@@ -41,7 +41,7 @@ const CodeEditor = ({ code, setCode, activeFile }) => {
         theme="vs-dark"
         language={getLanguage(activeFile)}
         value={code}
-        onChange={(value) => setCode(value)}
+        onChange={(value) => onCodeChange(value)}
         options={{
           fontSize: fontSize,
           automaticLayout: true,

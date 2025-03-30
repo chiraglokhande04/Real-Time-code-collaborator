@@ -54,6 +54,14 @@ const setupSocket = (server) => {
       }
     });
 
+    socket.on("get-room-content",(roomId,callback)=>{
+      if(rooms[roomId]){
+        callback(rooms[roomId].content)
+      }else {
+        callback([]);
+      }
+    })
+
     // Handle code updates
     socket.on('code-change', ({ roomId, newCode }) => {
       if (rooms[roomId]) {
