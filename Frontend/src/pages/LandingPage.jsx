@@ -24,11 +24,11 @@ const LandingPage = () => {
               Create / Join Room
             </NavLink>
           </li>
-          {/* <li className="rounded-xl bg-red-300 p-4 w-44">
+          <li className="rounded-xl bg-red-300 p-4 w-44">
             <NavLink to="/joinroom">
               Join Room
             </NavLink>
-          </li> */}
+          </li>
           <li className="rounded-xl bg-red-300 p-4 w-44">
             <button onClick={() => setIsSignInOpen(true)}>Sign In</button>
           </li>
