@@ -1,64 +1,77 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { FaPaperPlane } from "react-icons/fa";
+import { useSocket } from "../context/socketContext";
 
-const ChatBox = () => {
+const ChatBox = ({ roomId, username }) => {
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const chatEndRef = useRef(null);
+  const [users, setUsers] = useState([]);
+  const socket = useSocket();
 
-  // Scroll to bottom when a new message is added
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!socket || !roomId) return;
+
+    // Load chat history
+    const handleMessageHistory = (history) => {
+      setMessages(history);
+    };
+
+    // Listen for new messages
+    const handleIncomingMessage = (newMessage) => {
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    };
+
+    // Update connected users
+    const handleUserUpdate = (userList) => {
+      setUsers(userList);
+    };
+
+    socket.on("loadMessages", handleMessageHistory);
+    socket.on("new-message", handleIncomingMessage);
+    socket.on("update-users", handleUserUpdate);
+
+    return () => {
+      socket.off("loadMessages", handleMessageHistory);
+      socket.off("new-message", handleIncomingMessage);
+      socket.off("update-users", handleUserUpdate);
+    };
+  }, [socket, roomId]);
 
   const sendMessage = () => {
-    if (!input.trim()) return;
-
-    setMessages([...messages, { text: input, sender: "user" }]);
-    setInput("");
-
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { text: "This is a bot response!", sender: "bot" },
-      ]);
-    }, 1000);
+    if (message.trim() === "") return;
+    const newMessage = { roomId, sender: username, message };
+    socket.emit("send-message", newMessage);
+    setMessage("");
   };
 
   return (
-    <div className="flex flex-col w-96 h-130 border border-gray-700 rounded-lg bg-gray-900">
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`p-2 rounded-lg text-sm max-w-[75%] ${
-              msg.sender === "user"
-                ? "bg-blue-500 text-white self-end ml-auto"
-                : "bg-gray-700 text-gray-200 self-start"
-            }`}
-          >
-            {msg.text}
-          </div>
-        ))}
-        <div ref={chatEndRef}></div>
+    <div className="flex flex-col h-[550px] p-4 bg-gray-800 text-white">
+      {/* Navbar Showing Connected Users */}
+      <div className="bg-gray-900 p-2 rounded text-center mb-4">
+        <strong>Connected Users:</strong> {users.map((user) => user.username).join(", ")}
       </div>
 
-      {/* Input Field (Fixed at Bottom) */}
-      <div className=" p-2  bg-gray-800 border-t border-gray-700 flex items-center gap-2">
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto mb-2 p-2">
+        {messages.map((msg, index) => (
+          <div key={index} className={`mb-2 p-2 rounded ${msg.sender === username ? "bg-blue-500 text-white text-right" : "bg-gray-700 text-left"}`}>
+            <span className="font-bold">{msg.sender}: </span>
+            <span>{msg.message}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Input Box */}
+      <div className="flex items-center border-t border-gray-700 p-2 gap-1">
         <input
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          className="flex-1 bg-gray-700 w-[180px] p-2 rounded text-white outline-none"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
-          className="w-45 ml-2 bg-gray-700 text-white p-2 rounded-lg outline-none"
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
-        <button
-          onClick={sendMessage}
-          className="px-3 py-2 mr-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Send
+        <button className="mr-2 p-2 bg-blue-500 rounded" onClick={sendMessage}>
+          <FaPaperPlane />
         </button>
       </div>
     </div>

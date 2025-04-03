@@ -73,37 +73,12 @@ import { FaFileAlt, FaComment, FaVideo } from "react-icons/fa";
 import { useDropzone } from "react-dropzone";
 import ChatBox from "./ChatBox";
 import VoiceCall from "./VoiceCall";
+import FileManager from "./FileUploader";
 
-const SlideBar = ({ activeTab, handleTabClick, onFileUpload, files, onSelectFile }) => {
-  const [fileList, setFileList] = useState([]);
-
-  const handleDrop = async (acceptedFiles) => {
-    const newFiles = [];
-
-    for (const file of acceptedFiles) {
-      if (file.webkitRelativePath) {
-        // If it's part of a folder, get the relative path
-        newFiles.push({
-          name: file.name,
-          path: file.webkitRelativePath,
-          file: file,
-        });
-      } else {
-        // Normal file upload
-        newFiles.push({
-          name: file.name,
-          path: file.name,
-          file: file,
-        });
-      }
-    }
-
-    setFileList((prevFiles) => [...prevFiles, ...newFiles]);
-    onFileUpload(newFiles);
-  };
-
+const SlideBar = ({ activeTab, handleTabClick, onFileUpload, onSelectFile,roomId ,username}) => {
   const { getRootProps, getInputProps } = useDropzone({
-    onDrop: handleDrop,
+    onDrop: onFileUpload,
+    multiple: true,
     webkitdirectory: true,
     directory: true,
   });
@@ -111,51 +86,22 @@ const SlideBar = ({ activeTab, handleTabClick, onFileUpload, files, onSelectFile
   return (
     <div className="flex h-full">
       {/* Sidebar Icons */}
-      <div className="bg-gray-900 text-white flex flex-col items-center py-4 w-12">
-        <button className="p-3 hover:bg-gray-700 rounded" onClick={() => handleTabClick("files")}>
+      <div className="bg-gray-900 text-white flex flex-col items-center py-4 w-14">
+        <button className={`p-3 rounded transition-colors ${activeTab === "files" ? "bg-gray-700" : "hover:bg-gray-700"}`} onClick={() => handleTabClick("files")}>
           <FaFileAlt size={20} />
         </button>
-        <button className="p-3 hover:bg-gray-700 rounded" onClick={() => handleTabClick("chat")}>
+        <button className={`p-3 rounded transition-colors ${activeTab === "chat" ? "bg-gray-700" : "hover:bg-gray-700"}`} onClick={() => handleTabClick("chat")}>
           <FaComment size={20} />
         </button>
-        <button className="p-3 hover:bg-gray-700 rounded" onClick={() => handleTabClick("video")}>
+        <button className={`p-3 rounded transition-colors ${activeTab === "video" ? "bg-gray-700" : "hover:bg-gray-700"}`} onClick={() => handleTabClick("video")}>
           <FaVideo size={20} />
         </button>
       </div>
 
       {/* Expandable Content */}
-      <div className={`bg-gray-800 text-white transition-all ${activeTab ? "w-64" : "w-0"} overflow-hidden`}>
-        {/* File Manager */}
-        {activeTab === "files" && (
-          <div className="p-3">
-            <div {...getRootProps()} className="border-dashed border-2 border-gray-600 p-4 text-center cursor-pointer">
-              <input {...getInputProps()} webkitdirectory="true" directory="true" multiple />
-              <p className="text-gray-400">Drag & Drop folders or Click to Upload</p>
-            </div>
-
-            {/* Display Uploaded Files */}
-            <ul className="mt-4 text-sm">
-              {fileList.length > 0 ? (
-                fileList.map((file, index) => (
-                  <li
-                    key={index}
-                    className="cursor-pointer p-2 hover:bg-gray-700 border-b border-gray-600"
-                    onClick={() => onSelectFile(file)}
-                  >
-                    📂 {file.path}
-                  </li>
-                ))
-              ) : (
-                <p className="text-gray-400 text-sm mt-2">No files uploaded</p>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {/* Chat UI */}
-        {activeTab === "chat" && <ChatBox />}
-
-        {/* Video Call */}
+      <div className={`bg-gray-800 text-white transition-all ${activeTab ? "w-64" : "w-0"} overflow-hidden`}>        
+        {activeTab === "files" && <FileManager getRootProps={getRootProps} getInputProps={getInputProps} onSelectFile={onSelectFile} />}
+        {activeTab === "chat" && <ChatBox username={username} roomId = {roomId}/>}
         {activeTab === "video" && <VoiceCall />}
       </div>
     </div>
