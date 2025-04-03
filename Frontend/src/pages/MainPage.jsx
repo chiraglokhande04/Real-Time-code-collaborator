@@ -25,27 +25,50 @@ const MainPage = () => {
   };
 
   // Handle file upload and read content
+  // const handleFileUpload = (uploadedFiles) => {
+  //   const newFiles = [];
+  //   uploadedFiles.forEach((file) => {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       const fileContent = e.target.result;
+  //       const newFile = { name: file.webkitRelativePath || file.name, content: fileContent };
+  //       newFiles.push(newFile);
+  
+  //       if (newFiles.length === uploadedFiles.length) {
+  //         setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+  
+  //         // Open the first uploaded file
+  //         if (newFiles.length > 0 && !selectedFile) {
+  //           handleSelectFile(newFiles[0]);
+  //         }
+  //       }
+  //     };
+  //     reader.readAsText(file);
+  //   });
+  // };
+
   const handleFileUpload = (uploadedFiles) => {
     const newFiles = [];
+  
     uploadedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const fileContent = e.target.result;
-        const newFile = { name: file.webkitRelativePath || file.name, content: fileContent };
+        const newFile = {
+          name: file.webkitRelativePath || file.name, // ✅ Keep original file structure
+          content: fileContent,
+          file: file, // ✅ Store the original file reference
+        };
         newFiles.push(newFile);
   
         if (newFiles.length === uploadedFiles.length) {
-          setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  
-          // Open the first uploaded file
-          if (newFiles.length > 0 && !selectedFile) {
-            handleSelectFile(newFiles[0]);
-          }
+          setFiles((prevFiles) => [...prevFiles, ...newFiles]); // ✅ Update state with all files
         }
       };
       reader.readAsText(file);
     });
   };
+  
   
 
 
@@ -168,7 +191,7 @@ const MainPage = () => {
 
       <div className="flex h-full">
         {/* Sidebar */}
-        <SlideBar
+        {/* <SlideBar
           activeTab={activeTab}
           handleTabClick={handleTabClick}
           onFileUpload={handleFileUpload}
@@ -176,7 +199,17 @@ const MainPage = () => {
           onSelectFile={handleSelectFile}
           roomId = {id}
           username={username}
-        />
+        /> */}
+
+<SlideBar
+  activeTab={activeTab}
+  handleTabClick={handleTabClick}
+  onFileUpload={handleFileUpload}
+  files={files}  // ✅ Pass files to SlideBar
+  onSelectFile={handleSelectFile}
+  roomId={id}
+  username={username}
+/>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col transition-all duration-300">
