@@ -201,22 +201,60 @@ const MainPage = () => {
   //   setSelectedFile(file);
   // };
 
+
+  // const handleSelectFile = (file) => {
+  //   const reader = new FileReader();
+  
+  //   reader.onload = (event) => {
+  //     const fileContent = event.target.result;
+  
+  //     setCode(fileContent); // Update the editor with the file's content
+  
+  //     // Emit the content after it has been successfully read
+  //     socket.emit("code-change", { roomId, newCode: fileContent });
+  //   };
+  
+  //   reader.readAsText(file.file); // Read the file as text
+  
+  //   if (!openFiles.some((f) => f.name === file.name)) {
+  //     setOpenFiles([...openFiles, file]);
+  //   }
+  
+  //   setSelectedFile(file);
+  // };
+
   const handleSelectFile = (file) => {
+    if (!file.file) return; // Ensure there's a file to read
+  
     const reader = new FileReader();
   
     reader.onload = (event) => {
       const fileContent = event.target.result;
-      setCode(fileContent); // Update the editor with the file's content
+  
+      // Update editor & selected file state
+      setCode(fileContent);
+      setSelectedFile(file);
+  
+      // Ensure file is added to open files
+      setOpenFiles((prev) => {
+        if (!prev.some((f) => f.name === file.name)) {
+          return [...prev, file];
+        }
+        return prev;
+      });
+  
+      // Emit socket event *after* state updates
+      setTimeout(() => {
+        socket.emit("code-change", { roomId, newCode: fileContent });
+      }, 100);
     };
   
-    reader.readAsText(file.file); // Read the file as text
-  
-    if (!openFiles.some((f) => f.name === file.name)) {
-      setOpenFiles([...openFiles, file]);
-    }
-  
-    setSelectedFile(file);
+    reader.readAsText(file.file);
   };
+  
+
+
+  
   // Get users in room
   useEffect(() => {
     if (!socket) return;

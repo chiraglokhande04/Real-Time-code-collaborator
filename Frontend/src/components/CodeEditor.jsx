@@ -54,3 +54,4 @@ const CodeEditor = ({ code,  activeFile ,onCodeChange}) => {
 };
 
 export default CodeEditor;
+
