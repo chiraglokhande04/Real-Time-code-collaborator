@@ -73,7 +73,7 @@ import { FaFileAlt, FaComment, FaVideo } from "react-icons/fa";
 import { useDropzone } from "react-dropzone";
 import ChatBox from "./ChatBox";
 import VoiceCall from "./VoiceCall";
-import FileManager from "./FileUploader";
+import FileUploader from "./FileUploader";
 
 const SlideBar = ({ activeTab, handleTabClick, onFileUpload, onSelectFile,roomId ,username}) => {
   const { getRootProps, getInputProps } = useDropzone({
@@ -100,7 +100,7 @@ const SlideBar = ({ activeTab, handleTabClick, onFileUpload, onSelectFile,roomId
 
       {/* Expandable Content */}
       <div className={`bg-gray-800 text-white transition-all ${activeTab ? "w-64" : "w-0"} overflow-hidden`}>        
-        {activeTab === "files" && <FileManager getRootProps={getRootProps} getInputProps={getInputProps} onSelectFile={onSelectFile} />}
+        {activeTab === "files" && <FileUploader  getRootProps={getRootProps} getInputProps={getInputProps} onSelectFile={onSelectFile} onUpload={onFileUpload} />}
         {activeTab === "chat" && <ChatBox username={username} roomId = {roomId}/>}
         {activeTab === "video" && <VoiceCall />}
       </div>

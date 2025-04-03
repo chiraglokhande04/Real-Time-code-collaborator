@@ -10,6 +10,7 @@ const setupSocket = (server) => {
   });
 
   const rooms = {}; // Store all rooms and users
+  let activeUsers = {};
 
   io.on("connection", (socket) => {
     console.log("✅ Socket Connected:", socket.id);
@@ -103,6 +104,10 @@ const setupSocket = (server) => {
       }
     });
 
+    socket.on("cursor-move", ({ username, position }) => {
+      socket.broadcast.emit("update-cursor", { username, position });
+    });
+  
     // ❌ Handle Disconnect
     socket.on("disconnect", () => {
       console.log("❌ Socket Disconnected:", socket.id);

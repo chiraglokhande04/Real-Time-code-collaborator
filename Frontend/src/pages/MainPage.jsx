@@ -190,6 +190,8 @@ const MainPage = () => {
               setOpenFiles={setOpenFiles}
               setSelectedFile={setSelectedFile}
               onCodeChange={handleCodeChange}
+              username={username}
+              socket = {socket}
             />
           </div>
 
