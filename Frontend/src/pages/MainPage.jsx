@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import SlideBar from "../components/SlideBar";
@@ -17,6 +15,9 @@ const MainPage = () => {
   const [username, setUsername] = useState("");
   const [code, setCode] = useState("// Write your code here...");
   const [users, setUsers] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const socket = useSocket();
 
   // Handle sidebar tab clicks
@@ -24,32 +25,9 @@ const MainPage = () => {
     setActiveTab(activeTab === tab ? null : tab);
   };
 
-  // Handle file upload and read content
-  // const handleFileUpload = (uploadedFiles) => {
-  //   const newFiles = [];
-  //   uploadedFiles.forEach((file) => {
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       const fileContent = e.target.result;
-  //       const newFile = { name: file.webkitRelativePath || file.name, content: fileContent };
-  //       newFiles.push(newFile);
-  
-  //       if (newFiles.length === uploadedFiles.length) {
-  //         setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  
-  //         // Open the first uploaded file
-  //         if (newFiles.length > 0 && !selectedFile) {
-  //           handleSelectFile(newFiles[0]);
-  //         }
-  //       }
-  //     };
-  //     reader.readAsText(file);
-  //   });
-  // };
-
   const handleFileUpload = (uploadedFiles) => {
     const newFiles = [];
-  
+
     uploadedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -60,7 +38,7 @@ const MainPage = () => {
           file: file, // ✅ Store the original file reference
         };
         newFiles.push(newFile);
-  
+
         if (newFiles.length === uploadedFiles.length) {
           setFiles((prevFiles) => [...prevFiles, ...newFiles]); // ✅ Update state with all files
         }
@@ -68,53 +46,19 @@ const MainPage = () => {
       reader.readAsText(file);
     });
   };
-  
-  
-
-
-  // Handle file selection
-  // const handleSelectFile = (file) => {
-  //   if (!openFiles.some((f) => f.name === file.name)) {
-  //     setOpenFiles([...openFiles, file]);
-  //   }
-  //   setCode(file.content);
-  //   setSelectedFile(file);
-  // };
-
-
-  // const handleSelectFile = (file) => {
-  //   const reader = new FileReader();
-  
-  //   reader.onload = (event) => {
-  //     const fileContent = event.target.result;
-  
-  //     setCode(fileContent); // Update the editor with the file's content
-  
-  //     // Emit the content after it has been successfully read
-  //     socket.emit("code-change", { roomId, newCode: fileContent });
-  //   };
-  
-  //   reader.readAsText(file.file); // Read the file as text
-  
-  //   if (!openFiles.some((f) => f.name === file.name)) {
-  //     setOpenFiles([...openFiles, file]);
-  //   }
-  
-  //   setSelectedFile(file);
-  // };
 
   const handleSelectFile = (file) => {
     if (!file.file) return; // Ensure there's a file to read
-  
+
     const reader = new FileReader();
-  
+
     reader.onload = (event) => {
       const fileContent = event.target.result;
-  
+
       // Update editor & selected file state
       setCode(fileContent);
       setSelectedFile(file);
-  
+
       // Ensure file is added to open files
       setOpenFiles((prev) => {
         if (!prev.some((f) => f.name === file.name)) {
@@ -122,19 +66,16 @@ const MainPage = () => {
         }
         return prev;
       });
-  
+
       // Emit socket event *after* state updates
       setTimeout(() => {
         socket.emit("code-change", { roomId, newCode: fileContent });
       }, 100);
     };
-  
+
     reader.readAsText(file.file);
   };
-  
 
-
-  
   // Get users in room
   useEffect(() => {
     if (!socket) return;
@@ -173,6 +114,7 @@ const MainPage = () => {
     const handleCodeUpdate = (newCode) => {
       setCode(newCode);
     };
+    
     socket.on("update-code", handleCodeUpdate);
     return () => {
       socket.off("update-code", handleCodeUpdate);
@@ -190,26 +132,20 @@ const MainPage = () => {
       <NavBar id={id} users={users} />
 
       <div className="flex h-full">
-        {/* Sidebar */}
-        {/* <SlideBar
+        <SlideBar
           activeTab={activeTab}
           handleTabClick={handleTabClick}
           onFileUpload={handleFileUpload}
-          files={files}
+          files={files} // ✅ Pass files to SlideBar
           onSelectFile={handleSelectFile}
-          roomId = {id}
+          roomId={id}
           username={username}
-        /> */}
+          messages={messages}
+          setMessages={setMessages}
+          unreadCount={unreadCount}
+          setUnreadCount={setUnreadCount}
 
-<SlideBar
-  activeTab={activeTab}
-  handleTabClick={handleTabClick}
-  onFileUpload={handleFileUpload}
-  files={files}  // ✅ Pass files to SlideBar
-  onSelectFile={handleSelectFile}
-  roomId={id}
-  username={username}
-/>
+        />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col transition-all duration-300">
@@ -224,7 +160,7 @@ const MainPage = () => {
               setSelectedFile={setSelectedFile}
               onCodeChange={handleCodeChange}
               username={username}
-              socket = {socket}
+              socket={socket}
             />
           </div>
 
