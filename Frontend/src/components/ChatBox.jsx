@@ -84,7 +84,14 @@ import React, { useState, useEffect } from "react";
 import { FaPaperPlane } from "react-icons/fa";
 import { useSocket } from "../context/socketContext";
 
-const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOpen }) => {
+const ChatBox = ({
+  roomId,
+  username,
+  messages,
+  setMessages,
+  setUnreadCount,
+  isOpen,
+}) => {
   const [message, setMessage] = useState("");
   const [users, setUsers] = useState([]);
   const socket = useSocket();
@@ -118,26 +125,38 @@ const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOp
     };
   }, [socket, roomId, isOpen, setMessages, setUnreadCount]);
 
+  // 🔥 emit chat open/close toggle to server when 'isOpen' changes
+  useEffect(() => {
+    if (socket && roomId) {
+      socket.emit("toggle", isOpen); // Emit toggle event
+    }
+  }, [isOpen, socket, roomId]);
+
   const sendMessage = () => {
     if (message.trim() === "") return;
-  
+
     const newMessage = { roomId, sender: username, message };
     socket.emit("sendMessage", newMessage); // 🔹 Just emit, don’t add locally
-  
+
     setMessage(""); // ✅ Just clear input, do not push into state here
   };
-  
+
   return (
     <div className="flex flex-col h-[550px] p-4 bg-gray-800 text-white">
       <div className="bg-gray-900 p-2 rounded text-center mb-4">
-        <strong>Connected Users:</strong> {users.map((user) => user.username).join(", ")}
+        <strong>Connected Users:</strong>{" "}
+        {users.map((user) => user.username).join(", ")}
       </div>
 
       <div className="flex-1 overflow-y-auto mb-2 p-2">
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`mb-2 p-2 rounded ${msg.sender === username ? "bg-blue-500 text-white text-right" : "bg-gray-700 text-left"}`}
+            className={`mb-2 p-2 rounded ${
+              msg.sender === username
+                ? "bg-blue-500 text-white text-right"
+                : "bg-gray-700 text-left"
+            }`}
           >
             <span className="font-bold">{msg.sender}: </span>
             <span>{msg.message}</span>
@@ -162,4 +181,3 @@ const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOp
 };
 
 export default ChatBox;
-

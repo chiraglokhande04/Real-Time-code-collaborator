@@ -54,7 +54,7 @@ const setupSocket = (server) => {
 
     // 🟠 Toggle Chat Open State
     socket.on("toggle", (isOpen) => {
-      const roomId = userRoomMap[socket.id];
+      const roomId = rooms[socket.id];
       if (roomId && rooms[roomId]?.users[socket.id]) {
         rooms[roomId].users[socket.id].chatOpen = isOpen;
       }
@@ -98,7 +98,7 @@ const setupSocket = (server) => {
         };
 
         io.to(roomId).emit("newMessage", newMessage);
-        io.to(roomId).emit("chat:notification", { sender, message }); // 🔔 Emit notification
+        // io.to(roomId).emit("chat:notification", { sender, message }); // 🔔 Emit notification
         Object.entries(rooms[roomId].users).forEach(([id, users]) => {
           if (!users.chatOpen) {
             io.to(id).emit("notification", { sender, message });
