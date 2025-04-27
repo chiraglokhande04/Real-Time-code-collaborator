@@ -25,7 +25,7 @@ const setupSocket = (server) => {
       socket.emit("room-created", roomId, rooms[roomId].content);
       console.log("🚀 Room Created:", roomId);
 
-      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
     });
 
     // 🟡 Join Room
@@ -49,7 +49,7 @@ const setupSocket = (server) => {
         console.error("❌ Error loading messages:", error);
       }
 
-      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
     });
 
     // 🟠 Toggle Chat Open State
@@ -131,7 +131,7 @@ const setupSocket = (server) => {
       Object.keys(rooms).forEach((roomId) => {
         if (rooms[roomId]?.users[socket.id]) {
           delete rooms[roomId].users[socket.id];
-          io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+          io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
 
           if (Object.keys(rooms[roomId].users).length === 0) {
             delete rooms[roomId];
