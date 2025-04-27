@@ -1,52 +1,48 @@
 
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaPaperPlane } from "react-icons/fa";
-import { useSocket } from "../context/socketContext";
 
-const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOpen }) => {
-  const [message, setMessage] = useState("");
+const ChatBox = ({ 
+  roomId, 
+  username, 
+  messages, 
+  setMessages, 
+  setUnreadCount, 
+  isOpen,
+  sendMessage // Receive the sendMessage function from props
+}) => {
+  const [messageText, setMessageText] = useState("");
   const [users, setUsers] = useState([]);
-  const socket = useSocket();
-
+  const messagesEndRef = useRef(null);
+  
+  // Get users list from parent component via socket
   useEffect(() => {
-    if (!socket || !roomId) return;
-
-    const loadMessages = (history) => {
-      setMessages(history);
-    };
-
-    const receiveMessage = (newMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-      if (!isOpen) {
-        setUnreadCount((prev) => prev + 1);
-      }
-    };
-
-    const updateUsers = (userList) => {
-      setUsers(userList);
-    };
-
-    socket.on("loadMessages", loadMessages);
-    socket.on("newMessage", receiveMessage);
-    socket.on("update-users", updateUsers);
-
-    return () => {
-      socket.off("loadMessages", loadMessages);
-      socket.off("newMessage", receiveMessage);
-      socket.off("update-users", updateUsers);
-    };
-  }, [socket, roomId, isOpen, setMessages, setUnreadCount]);
-
-  const sendMessage = () => {
-    if (message.trim() === "") return;
+    // This would be handled in the MainPage component now
+  }, []);
   
-    const newMessage = { roomId, sender: username, message };
-    socket.emit("sendMessage", newMessage); // 🔹 Just emit, don’t add locally
-  
-    setMessage(""); // ✅ Just clear input, do not push into state here
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleSendMessage = () => {
+    if (messageText.trim() === "") return;
+    
+    // Call the sendMessage function passed down from parent
+    sendMessage(messageText);
+    
+    // Clear the input field
+    setMessageText("");
   };
   
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="flex flex-col h-[550px] p-4 bg-gray-800 text-white">
       <div className="bg-gray-900 p-2 rounded text-center mb-4">
@@ -63,17 +59,22 @@ const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOp
             <span>{msg.message}</span>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="flex items-center border-t border-gray-700 p-2 gap-1">
         <input
           type="text"
           className="flex-1 bg-gray-700 w-[180px] p-2 rounded text-white outline-none"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          value={messageText}
+          onChange={(e) => setMessageText(e.target.value)}
+          onKeyPress={handleKeyPress}
           placeholder="Type a message..."
         />
-        <button className="mr-2 p-2 bg-blue-500 rounded" onClick={sendMessage}>
+        <button 
+          className="mr-2 p-2 bg-blue-500 rounded" 
+          onClick={handleSendMessage}
+        >
           <FaPaperPlane />
         </button>
       </div>
@@ -82,4 +83,3 @@ const ChatBox = ({ roomId, username, messages, setMessages, setUnreadCount, isOp
 };
 
 export default ChatBox;
-

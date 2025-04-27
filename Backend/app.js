@@ -9,6 +9,12 @@ const setupSocket = require('./config/socket'); // Importing socket logic
 const app = express();
 const server = http.createServer(app); // Creating HTTP server
 
+const cors = require("cors");
+app.use(cors());
+
+
+const { exec } = require("child_process");
+
 app.use(session({
   secret: "YOUR_SECRET_KEY",  // Change this to a strong, random key
   resave: false,
@@ -23,6 +29,22 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', require('./routes/authRouter'));
+
+app.post("/run-python", (req, res) => {
+  const code = req.body.code;
+  
+  if (!code) {
+      return res.status(400).json({ error: "No code provided." });
+  }
+
+  // Execute Python code
+  exec(`python3 -c "${code.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
+      if (error) {
+          return res.json({ output: stderr || error.message });
+      }
+      res.json({ output: stdout });
+  });
+});
 
 // Initialize Socket.IO
 setupSocket(server);

@@ -1,5 +1,4 @@
 
-
 import React, { useState } from "react";
 import { FaFileAlt, FaComment, FaVideo } from "react-icons/fa";
 import { useDropzone } from "react-dropzone";
@@ -19,8 +18,8 @@ const SlideBar = ({
   setMessages,
   unreadCount,
   setUnreadCount,
-  toggleChat,
-  chatNotification,
+  sendMessage, // New prop from parent
+  socket
 }) => {
   const [folderName, setFolderName] = useState(null);
 
@@ -127,13 +126,13 @@ const SlideBar = ({
             setMessages={setMessages}
             setUnreadCount={setUnreadCount}
             isOpen={activeTab === "chat"}
+            sendMessage={sendMessage} // Pass down the sendMessage function
           />
         )}
-        {activeTab === "video" && <VoiceCall />}
+        {activeTab === "video" && <VoiceCall socket={socket} />}
       </div>
     </div>
   );
 };
 
 export default SlideBar;
-
