@@ -1,3 +1,4 @@
+//
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const Chat = require("../models/ChatBox");
@@ -10,7 +11,6 @@ const setupSocket = (server) => {
   });
 
   const rooms = {}; // Store all rooms and users
-  let activeUsers = {};
 
   io.on("connection", (socket) => {
     console.log("✅ Socket Connected:", socket.id);
@@ -25,7 +25,7 @@ const setupSocket = (server) => {
       socket.emit("room-created", roomId, rooms[roomId].content);
       console.log("🚀 Room Created:", roomId);
 
-      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
     });
 
     // 🟡 Join Room
@@ -49,8 +49,17 @@ const setupSocket = (server) => {
         console.error("❌ Error loading messages:", error);
       }
 
-      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
     });
+
+    // 🟠 Toggle Chat Open State
+    socket.on("toggle", (isOpen) => {
+      const roomId = userRoomMap[socket.id];
+      if (roomId && rooms[roomId]?.users[socket.id]) {
+        rooms[roomId].users[socket.id].chatOpen = isOpen;
+      }
+    });
+
 
     // 🔄 Get Users in Room
     socket.on("get-room-users", (roomId, callback) => {
@@ -70,7 +79,7 @@ const setupSocket = (server) => {
     });
 
     // 💬 Handle Sending Messages
-    socket.on("send-message", async ({ roomId, sender, message }) => {
+    socket.on("sendMessage", async ({ roomId, sender, message }) => {
       if (!roomId || !sender || !message.trim()) return;
 
       try {
@@ -88,7 +97,13 @@ const setupSocket = (server) => {
           timestamp: chatMessage.timestamp,
         };
 
-        io.to(roomId).emit("new-message", newMessage); // 🔹 Send to ALL users in the room
+        io.to(roomId).emit("newMessage", newMessage);
+        io.to(roomId).emit("chat:notification", { sender, message }); // 🔔 Emit notification
+        Object.entries(rooms[roomId].users).forEach(([id, users]) => {
+          if (!users.chatOpen) {
+            io.to(id).emit("notification", { sender, message });
+          }
+        });
         console.log(`💬 Message Sent in ${roomId}: ${sender} -> ${message}`);
       } catch (error) {
         console.error("❌ Error sending message:", error);
@@ -104,10 +119,11 @@ const setupSocket = (server) => {
       }
     });
 
+    // 🖱️ Cursor Position
     socket.on("cursor-move", ({ username, position }) => {
       socket.broadcast.emit("update-cursor", { username, position });
     });
-  
+
     // ❌ Handle Disconnect
     socket.on("disconnect", () => {
       console.log("❌ Socket Disconnected:", socket.id);
@@ -115,10 +131,7 @@ const setupSocket = (server) => {
       Object.keys(rooms).forEach((roomId) => {
         if (rooms[roomId]?.users[socket.id]) {
           delete rooms[roomId].users[socket.id];
-          io.to(roomId).emit(
-            "update-users",
-            Object.values(rooms[roomId].users)
-          );
+          io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
 
           if (Object.keys(rooms[roomId].users).length === 0) {
             delete rooms[roomId];
