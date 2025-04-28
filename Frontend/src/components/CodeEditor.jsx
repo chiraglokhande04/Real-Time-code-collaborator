@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useRef, useEffect } from "react";
 import MonacoEditor from "@monaco-editor/react";
 
@@ -97,7 +94,25 @@ const CodeEditor = ({ code, activeFile, onCodeChange, username, socket }) => {
       const position = event.position;
       socket.emit("cursor-move", { username, position });
     });
+    
+    // Layout update when editor size changes
+    window.addEventListener('resize', () => {
+      if (editor) {
+        editor.layout();
+      }
+    });
   };
+
+  // Layout update when component updates
+  useEffect(() => {
+    // Force Monaco editor to update its layout when content changes
+    if (editorRef.current) {
+      // Small delay to let the DOM update first
+      setTimeout(() => {
+        editorRef.current.layout();
+      }, 50);
+    }
+  }, [code, showOutput]);
 
   // Listen for real-time cursor updates
   useEffect(() => {
@@ -113,70 +128,6 @@ const CodeEditor = ({ code, activeFile, onCodeChange, username, socket }) => {
       socket.off("update-cursor");
     };
   }, [socket, username]);
-
-  // Run code function
-  // const runCode = async () => {
-  //   setIsRunning(true);
-  //   setOutput("");
-  //   setShowOutput(true);
-    
-  //   try {
-  //     // Get current code
-  //     const currentCode = editorRef.current.getValue();
-      
-  //     // Different execution based on language
-  //     if (language === "javascript") {
-  //       // Create a sandbox environment for JavaScript execution
-  //       const originalConsoleLog = console.log;
-  //       let consoleOutput = [];
-        
-  //       // Override console.log to capture output
-  //       console.log = (...args) => {
-  //         consoleOutput.push(args.map(arg => 
-  //           typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  //         ).join(' '));
-  //       };
-        
-  //       try {
-  //         // Use Function constructor as a sandbox (still has limitations)
-  //         const sandboxFn = new Function(currentCode);
-  //         await sandboxFn();
-  //         setOutput(consoleOutput.join('\n'));
-  //       } catch (error) {
-  //         setOutput(`Error: ${error.message}`);
-  //       } finally {
-  //         // Restore original console.log
-  //         console.log = originalConsoleLog;
-  //       }
-  //     } else if (language === "python" || language === "java" || language === "cpp") {
-  //       // In a real app, this would connect to a backend service
-  //       setOutput(`[Server] Running ${language} code...\n\nNote: Server-side execution is not implemented in this demo.\nTo execute ${language} code, you would need a backend service.`);
-  //     } else if (language === "html") {
-  //       // For HTML, create an iframe preview
-  //       const iframe = document.createElement('iframe');
-  //       iframe.srcdoc = currentCode;
-  //       iframe.style.width = '100%';
-  //       iframe.style.height = '300px';
-  //       iframe.style.border = 'none';
-        
-  //       // Clear previous output and append iframe
-  //       const outputContainer = document.getElementById('output-container');
-  //       if (outputContainer) {
-  //         outputContainer.innerHTML = '';
-  //         outputContainer.appendChild(iframe);
-  //         setOutput("HTML preview rendered in iframe below:");
-  //       } else {
-  //         setOutput("HTML preview container not found");
-  //       }
-  //     } else {
-  //       setOutput(`Running ${language} code is not supported in this demo version.`);
-  //     }
-  //   } catch (error) {
-  //     setOutput(`Error: ${error.message}`);
-  //   } finally {
-  //     setIsRunning(false);
-  //   }
-  // };
 
   const runCode = async () => {
     setIsRunning(true);
@@ -242,39 +193,44 @@ const CodeEditor = ({ code, activeFile, onCodeChange, username, socket }) => {
       setIsRunning(false);
     }
   };
-  
 
   return (
     <div className="h-full flex flex-col">
-      {/* Controls */}
-      <div className="flex items-center justify-between bg-gray-800 text-white p-2">
-        <div className="flex items-center">
-          <span className="mr-2">Font Size:</span>
+      {/* Controls - Redesigned to be fully responsive */}
+      <div className="flex flex-wrap items-center bg-gray-800 text-white p-2 gap-2">
+        {/* Font size control - will wrap on smaller screens */}
+        <div className="flex items-center mr-2 min-w-fit">
+          <span className="text-sm whitespace-nowrap mr-1">Font:</span>
           <input
             type="range"
             min="12"
             max="24"
             value={fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
-            className="mr-4"
+            className="w-20"
           />
+          <span className="text-xs ml-1">{fontSize}</span>
         </div>
         
-        <span className="flex-grow text-center">
+        {/* File info - will shrink and eventually wrap */}
+        <div className="flex-grow text-center overflow-hidden text-ellipsis whitespace-nowrap px-2 min-w-0">
           {activeFile ? `${activeFile} (${language})` : "No file selected"}
-        </span>
+        </div>
         
-        <button
-          onClick={runCode}
-          disabled={isRunning}
-          className={`px-4 py-1 rounded ${
-            isRunning 
-              ? "bg-gray-600 cursor-not-allowed" 
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {isRunning ? "Running..." : "▶ Run Code"}
-        </button>
+        {/* Run button - fixed position regardless of content */}
+        <div className="flex-shrink-0">
+          <button
+            onClick={runCode}
+            disabled={isRunning}
+            className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
+              isRunning 
+                ? "bg-gray-600 cursor-not-allowed" 
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {isRunning ? "Running..." : "▶ Run"}
+          </button>
+        </div>
       </div>
 
       {/* Editor Container */}
@@ -289,8 +245,9 @@ const CodeEditor = ({ code, activeFile, onCodeChange, username, socket }) => {
           options={{
             fontSize: fontSize,
             automaticLayout: true,
-            minimap: { enabled: true },
+            minimap: { enabled: true, maxColumn: 60 },
             wordWrap: "on",
+            scrollBeyondLastLine: false,
           }}
         />
       </div>
@@ -299,10 +256,11 @@ const CodeEditor = ({ code, activeFile, onCodeChange, username, socket }) => {
       {showOutput && (
         <div className="h-2/5 border-t-2 border-gray-700 flex flex-col">
           <div className="bg-gray-800 text-white p-2 flex justify-between items-center">
-            <span>Output Console</span>
+            <span className="text-sm">Output Console</span>
             <button 
               onClick={() => setShowOutput(false)}
               className="text-gray-400 hover:text-white"
+              aria-label="Close console"
             >
               ✕
             </button>

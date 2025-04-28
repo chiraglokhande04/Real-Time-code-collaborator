@@ -29,6 +29,7 @@ const SlideBar = ({
         const firstFilePath =
           acceptedFiles[0].webkitRelativePath || acceptedFiles[0].name;
         const extractedFolderName = firstFilePath.split("/")[0]; // Extract folder name
+        console.log("Folder Name:", extractedFolderName);
         setFolderName(extractedFolderName);
       }
       onFileUpload(acceptedFiles);
@@ -107,7 +108,7 @@ const SlideBar = ({
                 {files.map((file, index) => (
                   <li
                     key={index}
-                    className="cursor-pointer hover:bg-gray-700 p-2 rounded"
+                    className="cursor-pointer hover:bg-gray-700 p-2  rounded"
                     onClick={() => onSelectFile(file)}
                   >
                     {file.name}
