@@ -32,6 +32,7 @@ app.use('/auth', require('./routes/authRouter'));
 
 app.post("/run-python", (req, res) => {
   const code = req.body.code;
+  console.log("Received Python code:", code);
   
   if (!code) {
       return res.status(400).json({ error: "No code provided." });
