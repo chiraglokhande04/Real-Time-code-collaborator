@@ -29,6 +29,13 @@ app.use(express.json());
 // Routes
 app.use('/auth', require('./routes/authRouter'));
 
+app.get('/', (req, res) => {
+  res.send('Welcome to the backend server!');
+}
+);
+
+
+
 app.post("/run-python", (req, res) => {
   const code = req.body.code;
   console.log("Received Python code:", code);
