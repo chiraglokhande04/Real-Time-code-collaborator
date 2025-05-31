@@ -9,7 +9,10 @@ const app = express();
 const server = http.createServer(app); // Creating HTTP server
 
 const cors = require("cors");
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Change this to your frontend URL
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+}));
 
 
 const { exec } = require("child_process");

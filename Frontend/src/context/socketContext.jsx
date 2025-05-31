@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const SocketContext = createContext(null);
 
@@ -11,7 +12,7 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
 
     useEffect(() => {
-        const socketInstance = io("http://localhost:3000", {
+        const socketInstance = io(apiUrl, {
             transports: ["websocket"],
             withCredentials: true,
         });
