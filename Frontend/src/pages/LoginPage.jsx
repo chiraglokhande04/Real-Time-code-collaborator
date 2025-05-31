@@ -24,27 +24,10 @@ export default function LoginPage() {
   }, []);
 
   const handleGoogleLogin = () => {
-    // console.log('Google login clicked');
-    // alert('🚀 Launching CodeCollab with Google OAuth...');
-    fetch(`${apiUrl}/auth/google`, {
-      method:'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => {
-        if (response.ok) {
-          navigate('/logged'); // Redirect to dashboard on success
-        } else {
-          throw new Error('Google login failed');
-        }
-      })
-      .catch((error) => {
-        console.error('Error during Google login:', error);
-        alert('Failed to log in with Google. Please try again.');
-      });
+    // Directly redirect the browser to initiate Google OAuth flow
+    window.location.href = `${apiUrl}/auth/google`;
   };
+  
 
   const codeSnippets = [
     { code: 'const magic = await collaborate();', delay: '0s', position: 'top-16 left-16' },
