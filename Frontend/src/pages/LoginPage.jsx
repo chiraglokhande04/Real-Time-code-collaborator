@@ -100,7 +100,7 @@ export default function LoginPage() {
             {/* Main card */}
             <div className="relative bg-gray-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl">
               {/* Animated top border */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 via-blue-500 via-cyan-500 to-transparent " />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500  to-transparent " />
               
               {/* Header section */}
               <div className="text-center mb-10">
@@ -152,7 +152,7 @@ export default function LoginPage() {
                 {[
                   { icon: '⚡', label: 'Lightning Fast', color: 'from-yellow-400 to-orange-500' },
                   { icon: '🤝', label: 'Team Sync', color: 'from-blue-400 to-purple-500' },
-                  { icon: '🔒', label: 'Bank-grade Security', color: 'from-green-400 to-emerald-500' }
+                  { icon: '🔒', label: 'Secure', color: 'from-green-400 to-emerald-500' }
                 ].map((feature, index) => (
                   <div key={index} className="group relative">
                     <div className={`absolute -inset-0.5 bg-gradient-to-r ${feature.color} rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300`} />
