@@ -8,8 +8,8 @@ authRouter.get('/google',passport.authenticate('google',{scope:['profile','email
 
 authRouter.get("/google/callback",
     passport.authenticate("google", {
-        successRedirect: "https://real-time-code-collaborator-two.vercel.app/logged",
-        failureRedirect: "https://real-time-code-collaborator-two.vercel.app"
+        successRedirect: `${process.env.CLIENT_URL}/logged`,
+        failureRedirect: process.env.CLIENT_URL
     })
 );
 
