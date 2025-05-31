@@ -27,7 +27,7 @@ require('./config/passportSetup');
 app.use(express.json());
 
 // Routes
-app.use('/auth', require('./routes/authRouter'));
+app.use('/api/auth', require('./routes/authRouter'));
 
 app.get('/', (req, res) => {
   res.send('Welcome to the backend server!');
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
 
 
 
-app.post("/run-python", (req, res) => {
+app.post("/api/run-python", (req, res) => {
   const code = req.body.code;
   console.log("Received Python code:", code);
   

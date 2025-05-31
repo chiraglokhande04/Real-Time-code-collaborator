@@ -17,7 +17,7 @@ exports.logout = async(req,res,next)=>{
             if(err){
                 return next(er)
             }
-            res.redirect('http://localhost:5000')
+            res.redirect('http://localhost:3000')
         })
 
     }catch(err){
