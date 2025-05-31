@@ -4,8 +4,7 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const passport = require('passport');
 const session = require('express-session');
-const setupSocket = require('./config/socket'); // Importing socket logic
-
+const setupSocket = require('./config/socket'); 
 const app = express();
 const server = http.createServer(app); // Creating HTTP server
 
