@@ -6,11 +6,11 @@ const authRouter = express.Router()
 
 authRouter.get('/google',passport.authenticate('google',{scope:['profile','email']}))
 
-authRouter.get("/google/callback",
-    passport.authenticate("google", {
-        successRedirect: `${process.env.CLIENT_URL}/logged`,
-        failureRedirect: process.env.CLIENT_URL
-    })
+authRouter.get('/google/callback',
+    passport.authenticate('google', { failureRedirect: process.env.CLIENT_URL }),
+    (req, res) => {
+        res.redirect(`${process.env.CLIENT_URL}/logged`);
+    }
 );
 
 authRouter.get("/login/success", loginSuccess);
