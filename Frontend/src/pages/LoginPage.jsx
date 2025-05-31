@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     // Directly redirect the browser to initiate Google OAuth flow
-    window.location.href = `${apiUrl}/auth/google`;
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
   
 
