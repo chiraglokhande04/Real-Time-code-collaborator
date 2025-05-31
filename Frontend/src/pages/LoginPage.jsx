@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import {useNavigate} from 'react-router-dom';
+
+const apiUrl = import.meta.env.VITE_API_URL;
+
 
 export default function LoginPage() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsLoaded(true);
@@ -19,8 +24,26 @@ export default function LoginPage() {
   }, []);
 
   const handleGoogleLogin = () => {
-    console.log('Google login clicked');
-    alert('🚀 Launching CodeCollab with Google OAuth...');
+    // console.log('Google login clicked');
+    // alert('🚀 Launching CodeCollab with Google OAuth...');
+    fetch(`${apiUrl}/auth/google`, {
+      method:'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => {
+        if (response.ok) {
+          navigate('/logged'); // Redirect to dashboard on success
+        } else {
+          throw new Error('Google login failed');
+        }
+      })
+      .catch((error) => {
+        console.error('Error during Google login:', error);
+        alert('Failed to log in with Google. Please try again.');
+      });
   };
 
   const codeSnippets = [
