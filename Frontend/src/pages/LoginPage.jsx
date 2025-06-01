@@ -159,7 +159,7 @@ export default function LoginPage() {
                     </span>
                   </div>
                 </button>
-                {loading && <LoadingOverlay />}
+                {loading && <LoadingOverlay className='h-full' />}
               </div>
 
               {/* Enhanced feature grid */}
