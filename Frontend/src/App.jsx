@@ -4,6 +4,7 @@ import CreateRoom from "./pages/CreateRoom";
 import JoinRoom from "./pages/JoinRoom";
 import MainPage from "./pages/MainPage";
 import LoginPage from "./pages/LoginPage";
+// import LoadingOverlay from "./components/LoadingOverlay";
 
 
 
@@ -13,6 +14,7 @@ function App() {
       <Router>
         <Routes>
         <Route path="/" element={<LoginPage />} />
+          {/* <Route path="/loading" element={<LoadingOverlay />} /> */}
         <Route path="/logged" element={<LandingPage />} />
           <Route path="/createroom" element={<CreateRoom />} />
           <Route path="/joinroom" element={<JoinRoom />} />

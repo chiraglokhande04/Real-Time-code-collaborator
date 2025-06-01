@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
+import LoadingOverlay from "../components/LoadingOverlay";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -7,6 +8,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 export default function LoginPage() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,9 +25,21 @@ export default function LoginPage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const handleGoogleLogin = () => {
-    // Directly redirect the browser to initiate Google OAuth flow
-    window.location.href = `${apiUrl}/api/auth/google`;
+  const handleGoogleLogin = async () => {
+    try {
+      // Optional: Show loading screen
+      setLoading(true);
+  
+      // Optional: Ping the backend to wake it up before OAuth redirect
+      // await fetch(`${apiUrl}/api/ping`, { method: "GET" });
+  
+      // Redirect to Google OAuth endpoint after backend is ready
+      window.location.href = `${apiUrl}/api/auth/google`;
+    } catch (error) {
+      console.error("Backend is not responding:", error);
+      setLoading(false);
+      alert("Server is waking up. Please try again in a few seconds.");
+    }
   };
   
 
@@ -145,6 +159,7 @@ export default function LoginPage() {
                     </span>
                   </div>
                 </button>
+                {loading && <LoadingOverlay />}
               </div>
 
               {/* Enhanced feature grid */}
