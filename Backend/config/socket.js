@@ -25,7 +25,7 @@ const setupSocket = (server) => {
       socket.emit("room-created", roomId, rooms[roomId].content);
       console.log("🚀 Room Created:", roomId);
 
-      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
     });
 
     // 🟡 Join Room
@@ -49,7 +49,7 @@ const setupSocket = (server) => {
         console.error("❌ Error loading messages:", error);
       }
 
-      io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
     });
 
     // 🟠 Toggle Chat Open State
@@ -70,11 +70,58 @@ const setupSocket = (server) => {
       }
     });
 
+
+
+
+    const roomFiles = new Map();
+
+    // When a user uploads files
+    socket.on("share-files", ({ roomId, files }) => {
+      // Store the files for this room
+      if (!roomFiles.has(roomId)) {
+        roomFiles.set(roomId, []);
+      }
+
+      // Update existing files or add new ones
+      const existingFiles = roomFiles.get(roomId);
+
+      files.forEach(newFile => {
+        const existingIndex = existingFiles.findIndex(f => f.name === newFile.name);
+        if (existingIndex >= 0) {
+          existingFiles[existingIndex] = newFile;
+        } else {
+          existingFiles.push(newFile);
+        }
+      });
+
+      // Save updated files
+      roomFiles.set(roomId, existingFiles);
+
+      // Broadcast to all other users in the room
+      socket.to(roomId).emit("receive-files", existingFiles);
+    });
+
+    // When a user requests room files
+    socket.on("get-room-files", (roomId) => {
+      if (roomFiles.has(roomId)) {
+        socket.emit("receive-files", roomFiles.get(roomId));
+      }
+    });
+
     // 📝 Handle Code Changes
-    socket.on("code-change", ({ roomId, newCode }) => {
+    socket.on("code-change", ({ roomId, newCode, fileName }) => {
       if (rooms[roomId]) {
         rooms[roomId].content = newCode;
-        socket.to(roomId).emit("update-code", newCode);
+        if (fileName && roomFiles.has(roomId)) {
+          const files = roomFiles.get(roomId);
+          const fileIndex = files.findIndex(f => f.name === fileName);
+
+          if (fileIndex >= 0) {
+            files[fileIndex].content = newCode;
+            roomFiles.set(roomId, files);
+          }
+        }
+        socket.to(roomId).emit("update-code", { newCode, fileName });
       }
     });
 
@@ -124,6 +171,21 @@ const setupSocket = (server) => {
       socket.broadcast.emit("update-cursor", { username, position });
     });
 
+
+
+    // Handle offer and answer signaling
+    socket.on("offer", (data) => {
+      socket.to(data.target).emit("offer", data);
+    });
+
+    socket.on("answer", (data) => {
+      socket.to(data.target).emit("answer", data);
+    });
+
+    socket.on("ice-candidate", (data) => {
+      socket.to(data.target).emit("ice-candidate", data);
+    });
+
     // ❌ Handle Disconnect
     socket.on("disconnect", () => {
       console.log("❌ Socket Disconnected:", socket.id);
@@ -131,7 +193,7 @@ const setupSocket = (server) => {
       Object.keys(rooms).forEach((roomId) => {
         if (rooms[roomId]?.users[socket.id]) {
           delete rooms[roomId].users[socket.id];
-          io.to(roomId).emit("updateUsers", Object.values(rooms[roomId].users));
+          io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
 
           if (Object.keys(rooms[roomId].users).length === 0) {
             delete rooms[roomId];

@@ -4,10 +4,18 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const passport = require('passport');
 const session = require('express-session');
-const setupSocket = require('./config/socket'); // Importing socket logic
-
+const setupSocket = require('./config/socket'); 
 const app = express();
 const server = http.createServer(app); // Creating HTTP server
+
+const cors = require("cors");
+app.use(cors({
+  origin: 'http://localhost:5173', // Change this to your frontend URL
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+}));
+
+
+const { exec } = require("child_process");
 
 app.use(session({
   secret: "YOUR_SECRET_KEY",  // Change this to a strong, random key
@@ -22,7 +30,31 @@ require('./config/passportSetup');
 app.use(express.json());
 
 // Routes
-app.use('/auth', require('./routes/authRouter'));
+app.use('/api/auth', require('./routes/authRouter'));
+
+app.get('/', (req, res) => {
+  res.send('Welcome to the backend server!');
+}
+);
+
+
+
+app.post("/api/run-python", (req, res) => {
+  const code = req.body.code;
+  console.log("Received Python code:", code);
+  
+  if (!code) {
+      return res.status(400).json({ error: "No code provided." });
+  }
+
+  // Execute Python code
+  exec(`python3 -c "${code.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
+      if (error) {
+          return res.json({ output: stderr || error.message });
+      }
+      res.json({ output: stdout });
+  });
+});
 
 // Initialize Socket.IO
 setupSocket(server);

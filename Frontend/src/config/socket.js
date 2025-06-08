@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 export const initSocket = async () => {
     const options = {
@@ -7,5 +8,5 @@ export const initSocket = async () => {
         timeout: 10000,
         transports: ['websocket'],
     };
-    return io('http://localhost:3000', options);
+    return io(apiUrl, options);
 };
