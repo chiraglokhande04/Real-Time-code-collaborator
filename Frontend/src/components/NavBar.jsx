@@ -62,20 +62,11 @@ const Navbar = ({ id, users = [] }) => {
           📋 Copy
         </button>
       </div>
-      <div className="flex items-center gap-4 mr-8 my-2">
-        {/* <button className="bg-gray-700 px-3 py-1 rounded">🌙</button> */}
-        <div className="flex gap-2 -space-x-2">
-          {users.length > 0 ? (
-            users.map((client) => (
-              <Clients key={client.socketId} username={client.username} />
-            ))
-          ) : (
-            <p>No Clients</p>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
 
 export default Navbar;
+
+
+{/* <button className="bg-gray-700 px-3 py-1 rounded">🌙</button> */}

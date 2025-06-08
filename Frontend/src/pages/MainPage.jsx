@@ -271,7 +271,7 @@ const MainPage = () => {
   return (
     <div className="h-screen flex flex-col">
       {/* Navbar */}
-      <NavBar id={id} users={users} />
+      <NavBar id={id}  />
 
       <div className="flex h-full overflow-hidden">
         {/* SlideBar - now using absolute positioning */}
@@ -280,6 +280,7 @@ const MainPage = () => {
           style={{ width: slideBarWidth }}
         >
           <SlideBar
+          users={users}
             activeTab={activeTab}
             handleTabClick={handleTabClick}
             onFileUpload={handleFileUpload}

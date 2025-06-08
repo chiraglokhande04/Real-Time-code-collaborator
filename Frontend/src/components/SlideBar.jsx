@@ -1,12 +1,16 @@
 
 import React, { useState } from "react";
-import { FaFileAlt, FaComment, FaVideo } from "react-icons/fa";
+import { FaFileAlt, FaComment, FaVideo, FaUser } from "react-icons/fa";
 import { useDropzone } from "react-dropzone";
 import ChatBox from "./ChatBox";
 import VoiceCall from "./VoiceCall";
 import FileUploader from "./FileUploader";
+import Clients from "./Clients";
+import Users from "./Users";
+import { User } from "lucide-react";
 
 const SlideBar = ({
+  users,
   activeTab,
   handleTabClick,
   onFileUpload,
@@ -80,6 +84,16 @@ const SlideBar = ({
           onClick={() => handleTabClick("video")}
         >
           <FaVideo size={20} />
+          
+        </button>
+        <button
+          className={`p-3 rounded transition-colors ${
+            activeTab === "video" ? "bg-gray-700" : "hover:bg-gray-700"
+          }`}
+          onClick={() => handleTabClick("users")}
+        >
+          <FaUser size={20} />
+          
         </button>
       </div>
 
@@ -131,6 +145,11 @@ const SlideBar = ({
           />
         )}
         {activeTab === "video" && <VoiceCall socket={socket} />}
+        {activeTab === "users" && (
+           <Users users={users} />
+          
+          
+        )}
       </div>
     </div>
   );
