@@ -44,7 +44,7 @@ const ChatBox = ({
   };
 
   return (
-    <div className="flex flex-col h-[550px] p-4 bg-gray-800 text-white">
+    <div className="flex flex-col h-[560px] p-4 bg-gray-800 text-white">
       <div className="bg-gray-900 p-2 rounded text-center mb-4">
         <strong>Connected Users:</strong> {users.map((user) => user.username).join(", ")}
       </div>

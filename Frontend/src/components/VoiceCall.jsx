@@ -197,7 +197,7 @@ const VoiceCall = ({socket}) => {
   };
 
   return (
-    <div className="flex flex-col p-4 w-80 h-130 bg-gray-900 rounded-lg text-white">
+    <div className="flex flex-col items-center p-4 w-90 h-full bg-gray-900 rounded-lg text-white">
       <h2 className="text-lg font-semibold mb-3">Voice Call</h2>
 
       {/* Participants */}
