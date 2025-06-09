@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
         required:true,
         unique:true
     },
+    rooms:[{}],
     image:{
         type:String
     },

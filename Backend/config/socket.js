@@ -187,21 +187,21 @@ const setupSocket = (server) => {
     });
 
     // ❌ Handle Disconnect
-    socket.on("disconnect", () => {
-      console.log("❌ Socket Disconnected:", socket.id);
+    // socket.on("disconnect", () => {
+    //   console.log("❌ Socket Disconnected:", socket.id);
 
-      Object.keys(rooms).forEach((roomId) => {
-        if (rooms[roomId]?.users[socket.id]) {
-          delete rooms[roomId].users[socket.id];
-          io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
+    //   Object.keys(rooms).forEach((roomId) => {
+    //     if (rooms[roomId]?.users[socket.id]) {
+    //       delete rooms[roomId].users[socket.id];
+    //       io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
 
-          if (Object.keys(rooms[roomId].users).length === 0) {
-            delete rooms[roomId];
-            console.log(`🗑️ Room ${roomId} deleted (No users left)`);
-          }
-        }
-      });
-    });
+    //       if (Object.keys(rooms[roomId].users).length === 0) {
+    //         delete rooms[roomId];
+    //         console.log(`🗑️ Room ${roomId} deleted (No users left)`);
+    //       }
+    //     }
+    //   });
+    // });
   });
 };
 
