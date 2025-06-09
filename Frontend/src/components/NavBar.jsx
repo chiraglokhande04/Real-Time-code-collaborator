@@ -36,12 +36,6 @@ import { useState, useEffect } from "react";
 import Clients from "./Clients";
 
 const Navbar = ({ id, users = [] }) => {
-  const [clients, setClients] = useState([]);
-
-  useEffect(() => {
-    setClients(users);
-  }, [users]);
-
   const copyRoomId = () => {
     if (typeof id === "string") {
       navigator.clipboard.writeText(id);
@@ -50,14 +44,14 @@ const Navbar = ({ id, users = [] }) => {
   };
 
   return (
-    <div className="w-full h-24 bg-gray-900 text-white p-4 flex justify-between items-center">
+    <div className="w-full h-20 bg-gray-900 text-white p-4 flex justify-between items-center">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold">
-          Room ID: {typeof id === "string" ? id : JSON.stringify(id)}
+          Room ID : {typeof id === "string" ? id : JSON.stringify(id)}
         </h2>
         <button
           onClick={copyRoomId}
-          className="ml-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
+          className="ml-2 bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white text-sm"
         >
           📋 Copy
         </button>
@@ -68,5 +62,3 @@ const Navbar = ({ id, users = [] }) => {
 
 export default Navbar;
 
-
-{/* <button className="bg-gray-700 px-3 py-1 rounded">🌙</button> */}
