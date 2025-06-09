@@ -16,3 +16,37 @@ const ChatSchema = new mongoose.Schema({
       default: Date.now,
     }
   });
+
+const roomSchema = new mongoose.Schema({
+    roomId:{
+        type:String,
+        required:true,
+        unique:true
+    },
+    name:{
+        type:String,
+        required:true
+    },
+    owner:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'User',
+        required:true
+    },
+    members:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'User'
+    }],
+    chatHistory: [ChatSchema],
+    folder: {
+        name: String,
+        content: String,
+        type: String,
+        lastModified: Date
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+})
+
+module.exports = mongoose.model("Room", roomSchema);
