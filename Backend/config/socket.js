@@ -11,17 +11,17 @@ const setupSocket = (server) => {
     },
   });
 
-  //const rooms = {}; // Store all rooms and users
+  const rooms = {}; // Store all rooms and users
 
   io.on("connection", (socket) => {
     console.log("✅ Socket Connected:", socket.id);
 
     // 🟢 Create Room
-    socket.on("create-room", (roomName,username) => {
+    socket.on("create-room", (username) => {
       const roomId = uuidv4();
-      Room.create({ roomId, name: roomName, owner: user._id, members: [user._id] })
-      // rooms[roomId] = { users: {}, content: "" };
-      // rooms[roomId].users[socket.id] = { id: socket.id, username };
+      // Room.create({ roomId, name: roomName, owner: user._id, members: [user._id] })
+      rooms[roomId] = { users: {}, content: "" };
+      rooms[roomId].users[socket.id] = { id: socket.id, username };
 
       socket.join(roomId);
       socket.emit("room-created", roomId, rooms[roomId].content);
