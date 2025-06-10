@@ -31,7 +31,6 @@
 
 // export default Navbar;
 
-
 import { useState, useEffect } from "react";
 import Clients from "./Clients";
 
@@ -61,4 +60,3 @@ const Navbar = ({ id, users = [] }) => {
 };
 
 export default Navbar;
-
