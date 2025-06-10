@@ -109,16 +109,13 @@
 
 // export default VoiceCall;
 
-
-
 import React, { useState, useRef, useEffect } from "react";
 
-
-
-
-const VoiceCall = ({socket}) => {
+const VoiceCall = ({ socket }) => {
   const [isCalling, setIsCalling] = useState(false);
-  const [participants, setParticipants] = useState([{ id: "You", name: "You" }]);
+  const [participants, setParticipants] = useState([
+    { id: "You", name: "You" },
+  ]);
   const localAudioRef = useRef(null);
   const peerConnections = useRef({});
 
@@ -130,7 +127,9 @@ const VoiceCall = ({socket}) => {
 
     socket.on("offer", async (data) => {
       const { sender, offer } = data;
-      await peerConnections.current[sender].setRemoteDescription(new RTCSessionDescription(offer));
+      await peerConnections.current[sender].setRemoteDescription(
+        new RTCSessionDescription(offer)
+      );
       const answer = await peerConnections.current[sender].createAnswer();
       await peerConnections.current[sender].setLocalDescription(answer);
       socket.emit("answer", { target: sender, answer });
@@ -138,12 +137,16 @@ const VoiceCall = ({socket}) => {
 
     socket.on("answer", async (data) => {
       const { sender, answer } = data;
-      await peerConnections.current[sender].setRemoteDescription(new RTCSessionDescription(answer));
+      await peerConnections.current[sender].setRemoteDescription(
+        new RTCSessionDescription(answer)
+      );
     });
 
     socket.on("ice-candidate", (data) => {
       const { sender, candidate } = data;
-      peerConnections.current[sender].addIceCandidate(new RTCIceCandidate(candidate));
+      peerConnections.current[sender].addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
     });
 
     return () => socket.off();
@@ -167,7 +170,10 @@ const VoiceCall = ({socket}) => {
 
           pc.onicecandidate = (event) => {
             if (event.candidate) {
-              socket.emit("ice-candidate", { target: userId, candidate: event.candidate });
+              socket.emit("ice-candidate", {
+                target: userId,
+                candidate: event.candidate,
+              });
             }
           };
 
@@ -211,7 +217,13 @@ const VoiceCall = ({socket}) => {
       </div>
 
       {/* Audio Element */}
-      <audio ref={localAudioRef} autoPlay playsInline controls className="hidden" />
+      <audio
+        ref={localAudioRef}
+        autoPlay
+        playsInline
+        controls
+        className="hidden"
+      />
 
       {/* Call Controls */}
       {!isCalling ? (

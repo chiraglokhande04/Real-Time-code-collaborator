@@ -21,7 +21,7 @@ const FileUploader = ({ onUpload }) => {
 
       {/* Label to Trigger Folder Selection */}
       <label htmlFor="folderUpload" className="cursor-pointer block p-4">
-        <p>Click to upload a folder</p>
+        <p>📁Click to upload a folder</p>
       </label>
     </div>
   );

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import SlideBar from "../components/SlideBar";
 import CodeEditor from "../components/CodeEditor";
-import TerminalComponent from "../components/TerminalComponent";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
