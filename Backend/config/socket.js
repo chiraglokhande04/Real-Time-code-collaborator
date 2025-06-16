@@ -17,15 +17,20 @@ const setupSocket = (server) => {
     const cookies = cookie.parse(socket.handshake.headers.cookie || '');
     const token = cookies.token;
     
+    
     if (!token) {
+      console.log("❌ No token found in cookies");
       return next(new Error("Authentication error"));
     }
     try{
-      const token = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = token; // Attach user info to the socket
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // console.log(token)
+      socket.user = decoded;
+     
       next();
 
     }catch(err){
+      
       return next(new Error("Authentication error"));
     }
   })
@@ -42,14 +47,14 @@ const setupSocket = (server) => {
         
         const newRoom = await Room.create({
           roomId,
-          roomName,
+          name:roomName,
           owner: userId,
           members:[userId],
           chatHistory: [],
           folder:{
-            default:"default.txt",
+            default:"default.js",
             content: "// Default content",
-            type: "text",
+            type: "javascript",
             lastModified: new Date()
           }
         })

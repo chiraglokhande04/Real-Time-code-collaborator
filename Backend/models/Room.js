@@ -38,10 +38,22 @@ const roomSchema = new mongoose.Schema({
     }],
     chatHistory: [ChatSchema],
     folder: {
-        name: String,
-        content: String,
+      default: {
+        type: String, // file name, e.g. "default.js"
+        default: "default.js",
+      },
+      content: {
+        type: String, // code content of the file
+        default: "// Default JavaScript code",
+      },
+      type: {
         type: String,
-        lastModified: Date
+        default: "javascript",
+      },
+      lastModified: {
+        type: Date,
+        default: Date.now,
+      },
     },
     createdAt: {
         type: Date,
