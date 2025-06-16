@@ -1,6 +1,8 @@
 //
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+const cookie = require("cookie");
 const Room = require("../models/Room");
 const Chat = require("../models/ChatBox");
 
@@ -12,7 +14,9 @@ const setupSocket = (server) => {
   });
 
   io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
+    const cookies = cookie.parse(socket.handshake.headers.cookie || '');
+    const token = cookies.token;
+    
     if (!token) {
       return next(new Error("Authentication error"));
     }
@@ -32,6 +36,7 @@ const setupSocket = (server) => {
     // 🟢 Create Room
     socket.on("create-room", async(roomName) => {
       try{
+        console.log("🟢 Creating room with name:", roomName);
         const roomId = uuidv4();
         const userId = socket.user._id;
         
@@ -98,9 +103,29 @@ const setupSocket = (server) => {
           socket.emit("error", "Room ID is required");
           return;
         }
+        const userId = socket.user._id;
         socket.join(roomId);
+        const room = await Room.findOne({ roomId }).populate('members', '_id username');
+        if (!room) {
+          socket.emit("error", "Room Not Found");
+          return;
+        }
+        // Add user to room members if not already present
+        room.members.push(userId)
+        console.log(`👤 ${socket.user.username} joined Room: ${roomId}`);
 
+        socket.emit("room-joined",roomId)
+        try {
+              const messages = await room.populate('chatHistory.sender', 'username').execPopulate()
+              socket.emit("loadMessages", messages);
+            } catch (error) {
+              console.error("❌ Error loading messages:", error);
+            }
+      
+        io.to(roomId).emit("update-users", [socket.users]);
       }catch(err){
+        console.error("❌ Failed to join room:", err);
+        socket.emit("error", "Failed to join room");
 
       }
     })

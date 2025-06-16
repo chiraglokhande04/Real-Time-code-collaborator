@@ -18,7 +18,12 @@ const token = getCookie('token');
 
 
 
+
+
+
 export const initSocket = async () => {
+
+
     const options = {
         'force new connection': true,
         reconnectionAttempt: 'Infinity',
@@ -26,8 +31,9 @@ export const initSocket = async () => {
         transports: ['websocket'],
 
         auth: {
-            token: token ? token : null
+            token: token 
         },
     };
+    
     return io(apiUrl, options);
 };

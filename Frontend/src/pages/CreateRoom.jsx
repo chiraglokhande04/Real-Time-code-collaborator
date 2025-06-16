@@ -13,12 +13,15 @@ const CreateRoom = () => {
   const navigate = useNavigate();
 
   const createRoom = () => {
+    console.log("🟢 Creating room with name:", roomName);
     if (!socket) {
       toast.error("⚠️ Socket not connected!");
+      console.log("❌ Socket not connected");
       return;
     }
 
     socket.emit("create-room", roomName);
+    console.log("🟢 Emitted create-room event with roomName:", roomName);
 
     // ✅ Listen for room-created event (only once)
     socket.once("room-created", ({ roomId,roomName, folder, members }) => {

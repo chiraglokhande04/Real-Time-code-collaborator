@@ -24,8 +24,6 @@ authRouter.get('/google/callback',
     }
 );
 
-authR
-
 authRouter.get("/login/success", loginSuccess);
 
 // Logout
