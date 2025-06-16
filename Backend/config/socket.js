@@ -11,48 +11,99 @@ const setupSocket = (server) => {
     },
   });
 
-  //const rooms = {}; // Store all rooms and users
+  io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error("Authentication error"));
+    }
+    try{
+      const token = jwt.verify(token, process.env.JWT_SECRET);
+      socket.user = token; // Attach user info to the socket
+      next();
+
+    }catch(err){
+      return next(new Error("Authentication error"));
+    }
+  })
 
   io.on("connection", (socket) => {
     console.log("✅ Socket Connected:", socket.id);
 
     // 🟢 Create Room
-    socket.on("create-room", (roomName,username) => {
-      const roomId = uuidv4();
-      Room.create({ roomId, name: roomName, owner: user._id, members: [user._id] })
-      // rooms[roomId] = { users: {}, content: "" };
-      // rooms[roomId].users[socket.id] = { id: socket.id, username };
+    socket.on("create-room", async(roomName) => {
+      try{
+        const roomId = uuidv4();
+        const userId = socket.user._id;
+        
+        const newRoom = await Room.create({
+          roomId,
+          roomName,
+          owner: userId,
+          members:[userId],
+          chatHistory: [],
+          folder:{
+            default:"default.txt",
+            content: "// Default content",
+            type: "text",
+            lastModified: new Date()
+          }
+        })
+  
+        socket.join(roomId);
+        socket.emit("room-created", 
+          { roomId:newRoom.roomId,
+            roomName:newRoom.roomName, 
+            folder:newRoom.folder,
+            members:newRoom.members});
+        console.log("🚀 Room Created:", roomId);
+  
+        io.to(roomId).emit("update-users", [socket.user]);
 
-      socket.join(roomId);
-      socket.emit("room-created", roomId, rooms[roomId].content);
-      console.log("🚀 Room Created:", roomId);
 
-      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
+      }catch(err){
+        console.error("❌ Failed to create room:", err);
+      socket.emit("error", "Failed to create room");
+      }
+     
     });
+
 
     // 🟡 Join Room
-    socket.on("join-room", async (username, roomId) => {
-      if (!rooms[roomId]) {
-        socket.emit("error", "Room Not Found");
-        return;
+    // socket.on("join-room", async (username, roomId) => {
+    //   if (!rooms[roomId]) {
+    //     socket.emit("error", "Room Not Found");
+    //     return;
+    //   }
+
+    //   rooms[roomId].users[socket.id] = { id: socket.id, username };
+    //   socket.join(roomId);
+    //   console.log(`👤 ${username} joined Room: ${roomId}`);
+
+    //   socket.emit("room-joined", roomId);
+
+    //   // 📥 Send chat history
+    //   try {
+    //     const messages = await Chat.find({ roomId }).sort({ timestamp: 1 });
+    //     socket.emit("loadMessages", messages);
+    //   } catch (error) {
+    //     console.error("❌ Error loading messages:", error);
+    //   }
+
+    //   io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
+    // });
+
+    socket.on("join-room",async(roomId)=>{
+      try{
+        if (!roomId) {
+          socket.emit("error", "Room ID is required");
+          return;
+        }
+        socket.join(roomId);
+
+      }catch(err){
+
       }
-
-      rooms[roomId].users[socket.id] = { id: socket.id, username };
-      socket.join(roomId);
-      console.log(`👤 ${username} joined Room: ${roomId}`);
-
-      socket.emit("room-joined", roomId);
-
-      // 📥 Send chat history
-      try {
-        const messages = await Chat.find({ roomId }).sort({ timestamp: 1 });
-        socket.emit("loadMessages", messages);
-      } catch (error) {
-        console.error("❌ Error loading messages:", error);
-      }
-
-      io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
-    });
+    })
 
     // 🟠 Toggle Chat Open State
     socket.on("toggle", (isOpen) => {
@@ -64,13 +115,34 @@ const setupSocket = (server) => {
 
 
     // 🔄 Get Users in Room
-    socket.on("get-room-users", (roomId, callback) => {
-      if (rooms[roomId]) {
-        callback(Object.values(rooms[roomId].users));
-      } else {
+    // socket.on("get-room-users", (roomId, callback) => {
+    //   if (roomId) {
+    //     callback(Object.values(roomId.users));
+    //   } else {
+    //     callback([]);
+    //   }
+    // });
+
+    socket.on("get-room-users", async(roomId, callback) => {
+      try{
+        if (!roomId) {
+          return callback([]);
+        }
+        const room = await  Room.findOne({ roomId }).populate('members', '_id username');
+        if (!room) {
+          return callback([]);
+        }
+        const users = room.members.map(member => ({
+          id: member._id,
+          username: member.username || "Guest", // Assuming members have a username field
+        }));
+        callback(users);
+      }catch(err){
+        console.error("❌ Error fetching room users:", err);
         callback([]);
+
       }
-    });
+    })
 
 
 
