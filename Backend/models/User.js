@@ -15,7 +15,10 @@ const userSchema = new mongoose.Schema({
         required:true,
         unique:true
     },
-    rooms:[{}],
+    rooms:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Room'
+    }],
     image:{
         type:String
     },
