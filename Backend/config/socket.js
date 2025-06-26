@@ -101,29 +101,6 @@ const setupSocket = (server) => {
 
 
     // 🟡 Join Room
-    // socket.on("join-room", async (username, roomId) => {
-    //   if (!rooms[roomId]) {
-    //     socket.emit("error", "Room Not Found");
-    //     return;
-    //   }
-
-    //   rooms[roomId].users[socket.id] = { id: socket.id, username };
-    //   socket.join(roomId);
-    //   console.log(`👤 ${username} joined Room: ${roomId}`);
-
-    //   socket.emit("room-joined", roomId);
-
-    //   // 📥 Send chat history
-    //   try {
-    //     const messages = await Chat.find({ roomId }).sort({ timestamp: 1 });
-    //     socket.emit("loadMessages", messages);
-    //   } catch (error) {
-    //     console.error("❌ Error loading messages:", error);
-    //   }
-
-    //   io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
-    // });
-
     socket.on("join-room", async (roomId) => {
       try {
         if (!roomId) {
@@ -150,11 +127,9 @@ const setupSocket = (server) => {
           room.members.push(userObjectId);
           await room.save();
         }
-        
-        
+         
         console.log(`👤 ${displayName} joined Room: ${roomId}`);
         socket.emit("room-joined", roomId);
-    
         // Load chat history with sender usernames
         try {
           await room.populate({
@@ -249,6 +224,7 @@ const setupSocket = (server) => {
     //     socket.emit("receive-files", roomFiles.get(roomId));
     //   }
     // });
+
 
     // 📝 Handle Code Changes
     // socket.on("code-change", ({ roomId, newCode, fileName }) => {

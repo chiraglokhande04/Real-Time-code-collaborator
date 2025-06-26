@@ -17,6 +17,14 @@ const ChatSchema = new mongoose.Schema({
     }
   });
 
+
+  const nodeSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    type: { type: String, enum: ['file', 'folder'], required: true },
+    content: { type: String }, // Only for files
+    children: [this], // Only for folders
+  }, { _id: false });
+
 const roomSchema = new mongoose.Schema({
     roomId:{
         type:String,
@@ -37,24 +45,7 @@ const roomSchema = new mongoose.Schema({
         ref:'User'
     }],
     chatHistory: [ChatSchema],
-    folder: {
-      default: {
-        type: String, // file name, e.g. "default.js"
-        default: "default.js",
-      },
-      content: {
-        type: String, // code content of the file
-        default: "// Default JavaScript code",
-      },
-      type: {
-        type: String,
-        default: "javascript",
-      },
-      lastModified: {
-        type: Date,
-        default: Date.now,
-      },
-    },
+    folderStructure: [nodeSchema],
     createdAt: {
         type: Date,
         default: Date.now
