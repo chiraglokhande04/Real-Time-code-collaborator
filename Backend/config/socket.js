@@ -181,7 +181,7 @@ const setupSocket = (server) => {
       }
     });
     
-    // 🟠 Toggle Chat Open State
+    //🟠 Toggle Chat Open State
     // socket.on("toggle", (isOpen) => {
     //   const roomId = rooms[socket.id];
     //   if (roomId && rooms[roomId]?.users[socket.id]) {
@@ -191,38 +191,30 @@ const setupSocket = (server) => {
 
 
     // 🔄 Get Users in Room
-    // socket.on("get-room-users", (roomId, callback) => {
-    //   if (roomId) {
-    //     callback(Object.values(roomId.users));
-    //   } else {
-    //     callback([]);
-    //   }
-    // });
+    socket.on("get-room-users", async(roomId, callback) => {
+      try{
+        if (!roomId) {
+          return callback([]);
+        }
 
-    // socket.on("get-room-users", async(roomId, callback) => {
-    //   try{
-    //     if (!roomId) {
-    //       return callback([]);
-    //     }
-    //     const room = await  Room.findOne({ roomId }).populate('members', '_id username');
-    //     if (!room) {
-    //       return callback([]);
-    //     }
-    //     const users = room.members.map(member => ({
-    //       id: member._id,
-    //       username: member.username || "Guest", // Assuming members have a username field
-    //     }));
-    //     callback(users);
-    //   }catch(err){
-    //     console.error("❌ Error fetching room users:", err);
-    //     callback([]);
+        const room = await Room.findOne({roomId}).populate('members', '_id displayName');
+        if (!room) {
+          return callback([]);
+        }
+        const users = room.members.map(member => ({
+          id: member._id,
+          username: member.displayName || "Guest", // Assuming members have a username field
+        }));
+        callback(users);
 
-    //   }
-    // })
+      }catch(err){
+        console.error("❌ Error fetching room users:", err);
+        callback([]);
+      }
+  
+    });
 
-
-
-
+    
     // const roomFiles = new Map();
 
     // // When a user uploads files
