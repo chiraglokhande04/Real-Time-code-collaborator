@@ -6,6 +6,7 @@ import TerminalComponent from "../components/TerminalComponent";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
+import axios from "axios";
 
 const MainPage = () => {
   const { id } = useParams();
@@ -22,6 +23,8 @@ const MainPage = () => {
   const editorRef = useRef(null);
   const [language, setLanguage] = useState("javascript");
 
+  const [tree, setTree] = useState([]);
+
   const socket = useSocket();
 
   // Handle sidebar tab clicks
@@ -34,85 +37,145 @@ const MainPage = () => {
     }
   };
 
-  const handleFileUpload = (uploadedFiles) => {
-    const newFiles = [];
+  // const handleFileUpload = (uploadedFiles) => {
+  //   const newFiles = [];
 
-    uploadedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContent = e.target.result;
-        const newFile = {
-          name: file.webkitRelativePath || file.name,
-          content: fileContent,
-          file: file,
-        };
-        newFiles.push(newFile);
+  //   uploadedFiles.forEach((file) => {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       const fileContent = e.target.result;
+  //       const newFile = {
+  //         name: file.webkitRelativePath || file.name,
+  //         content: fileContent,
+  //         file: file,
+  //       };
+  //       newFiles.push(newFile);
 
-        if (newFiles.length === uploadedFiles.length) {
-          // Update local state
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles, ...newFiles];
+  //       if (newFiles.length === uploadedFiles.length) {
+  //         // Update local state
+  //         setFiles((prevFiles) => {
+  //           const updatedFiles = [...prevFiles, ...newFiles];
 
-            // Share files with others in the room
-            socket.emit("share-files", {
-              roomId: id,
-              files: updatedFiles.map((file) => ({
-                name: file.name,
-                content: file.content,
-              })),
-            });
+  //           // Share files with others in the room
+  //           socket.emit("share-files", {
+  //             roomId: id,
+  //             files: updatedFiles.map((file) => ({
+  //               name: file.name,
+  //               content: file.content,
+  //             })),
+  //           });
 
-            return updatedFiles;
-          });
-        }
-      };
-      reader.readAsText(file);
-    });
-  };
+  //           return updatedFiles;
+  //         });
+  //       }
+  //     };
+  //     reader.readAsText(file);
+  //   });
+  // };
+
 
   // Listen for file updates from other users
+  // useEffect(() => {
+  //   if (!socket) return;
+
+  //   const handleReceivedFiles = (receivedFiles) => {
+  //     // Convert received files to the format we use locally
+  //     const formattedFiles = receivedFiles.map((file) => {
+  //       // Create a blob from the file content
+  //       const blob = new Blob([file.content], { type: "text/plain" });
+
+  //       // Create a File object from the blob
+  //       const fileObject = new File([blob], file.name, { type: "text/plain" });
+
+  //       return {
+  //         name: file.name,
+  //         content: file.content,
+  //         file: fileObject,
+  //       };
+  //     });
+
+  //     // Update local files state, but don't duplicate files
+  //     setFiles((prevFiles) => {
+  //       const existingFileNames = new Set(prevFiles.map((f) => f.name));
+  //       const newFiles = formattedFiles.filter(
+  //         (file) => !existingFileNames.has(file.name)
+  //       );
+
+  //       if (newFiles.length > 0) {
+  //         return [...prevFiles, ...newFiles];
+  //       }
+  //       return prevFiles;
+  //     });
+  //   };
+
+  //   socket.on("receive-files", handleReceivedFiles);
+
+  //   // When joining a room, request any existing files
+  //   socket.emit("get-room-files", id);
+
+  //   return () => {
+  //     socket.off("receive-files", handleReceivedFiles);
+  //   };
+  // }, [socket, id]);
+
   useEffect(() => {
-    if (!socket) return;
 
-    const handleReceivedFiles = (receivedFiles) => {
-      // Convert received files to the format we use locally
-      const formattedFiles = receivedFiles.map((file) => {
-        // Create a blob from the file content
-        const blob = new Blob([file.content], { type: "text/plain" });
 
-        // Create a File object from the blob
-        const fileObject = new File([blob], file.name, { type: "text/plain" });
+    if (!socket) {
+      console.warn("❌ socket is not initialized");
+      return;
+    }
 
-        return {
-          name: file.name,
-          content: file.content,
-          file: fileObject,
-        };
-      });
-
-      // Update local files state, but don't duplicate files
-      setFiles((prevFiles) => {
-        const existingFileNames = new Set(prevFiles.map((f) => f.name));
-        const newFiles = formattedFiles.filter(
-          (file) => !existingFileNames.has(file.name)
-        );
-
-        if (newFiles.length > 0) {
-          return [...prevFiles, ...newFiles];
-        }
-        return prevFiles;
-      });
+    const handleFileUploaded = () => {
+      fetchTree();
     };
-
-    socket.on("receive-files", handleReceivedFiles);
-
-    // When joining a room, request any existing files
-    socket.emit("get-room-files", id);
-
+  
+    socket.on("fileUploaded", handleFileUploaded);
+  
     return () => {
-      socket.off("receive-files", handleReceivedFiles);
+      socket.off("fileUploaded", handleFileUploaded);
     };
-  }, [socket, id]);
+  }, [id, socket]);
+  
+
+  const fetchTree = async () => {
+    const res = await axios.get(`http://localhost:3000/api/files/tree/${id}`);
+    // console.log("Fetched file tree:", res.data);
+    setTree(buildTree(res.data));
+
+    const newFiles = [];
+
+  const traverse = (nodes) => {
+    for (let node of nodes) {
+      if (node.type === "file") {
+        newFiles.push(node);
+      }
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+
+  traverse(tree);
+  setFiles(newFiles);
+  console.log("Files fetched:", newFiles);
+  setSelectedFile(newFiles.length > 0 ? newFiles[0] : null);
+  };
+
+  const buildTree = (items, parentId = null) => {
+    return items
+      .filter(item => String(item.parentId) === String(parentId))
+      .map(item => ({
+        ...item,
+        children: buildTree(items, item._id)
+      }));
+  };
+
+
+
+
+
+
 
   const handleSelectFile = (file) => {
     if (!file.file) return;
@@ -295,7 +358,7 @@ const MainPage = () => {
             setLanguage={setLanguage}
             activeTab={activeTab}
             handleTabClick={handleTabClick}
-            onFileUpload={handleFileUpload}
+            // onFileUpload={handleFileUpload}
             files={files}
             onSelectFile={handleSelectFile}
             roomId={id}
@@ -306,6 +369,8 @@ const MainPage = () => {
             setUnreadCount={setUnreadCount}
             sendMessage={sendMessage}
             socket={socket}
+
+            tree ={tree}
           />
         </div>
 

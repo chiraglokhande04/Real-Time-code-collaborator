@@ -14,6 +14,10 @@ const setupSocket = (server) => {
     },
   });
 
+  //const global._io = io; // Make io globally accessible
+  global._io = io; // Make io globally accessible
+
+
   io.use((socket, next) => {
     const cookies = cookie.parse(socket.handshake.headers.cookie || '');
     const token = cookies.token;
@@ -189,54 +193,56 @@ const setupSocket = (server) => {
   
     });
 
-    
-    // const roomFiles = new Map();
+    socket.on("share-files", async ({ roomId, files }) => {
+      try {
+        if (!roomId || !files || files.length === 0) {
+          socket.emit("error", "Invalid room ID or files");
+          return;
+        }
 
-    // // When a user uploads files
-    // socket.on("share-files", ({ roomId, files }) => {
-    //   // Store the files for this room
-    //   if (!roomFiles.has(roomId)) {
-    //     roomFiles.set(roomId, []);
-    //   }
+        // Ensure the room exists
+        const room = await Room.findOne({ roomId });
+        if (!room) {
+          socket.emit("error", "Room not found");
+          return;
+        }
 
-    //   // Update existing files or add new ones
-    //   const existingFiles = roomFiles.get(roomId);
+        console.log(`📂 Sharing files in room: ${roomId}`,files);
 
-    //   files.forEach(newFile => {
-    //     const existingIndex = existingFiles.findIndex(f => f.name === newFile.name);
-    //     if (existingIndex >= 0) {
-    //       existingFiles[existingIndex] = newFile;
-    //     } else {
-    //       existingFiles.push(newFile);
-    //     }
-    //   });
+        // Process each file
+        const filePromises = files.map(async (file) => {
+          // Here you would typically upload the file to a storage service
+          // For simplicity, we just return the file name and size
+          return {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: new Date(file.lastModified),
+          };
+        });
 
-    //   // Save updated files
-    //   roomFiles.set(roomId, existingFiles);
+        const uploadedFiles = await Promise.all(filePromises);
 
-    //   // Broadcast to all other users in the room
-    //   socket.to(roomId).emit("receive-files", existingFiles);
-    // });
+        // Emit the files to all users in the room
+        io.to(roomId).emit("files-shared", { roomId, files: uploadedFiles });
 
-    // When a user requests room files
-    // socket.on("get-room-files", (roomId) => {
-    //   if (roomFiles.has(roomId)) {
-    //     socket.emit("receive-files", roomFiles.get(roomId));
-    //   }
-    // });
-
+      } catch (error) {
+        console.error("❌ Error sharing files:", error);
+        socket.emit("error", "Failed to share files");
+      }
+    });
 
     // 📝 Handle Code Changes
     // socket.on("code-change", ({ roomId, newCode, fileName }) => {
     //   if (rooms[roomId]) {
     //     rooms[roomId].content = newCode;
-    //     if (fileName && roomFiles.has(roomId)) {
-    //       const files = roomFiles.get(roomId);
+    //     if (fileName && files.has(roomId)) {
+    //       const files = files.get(roomId);
     //       const fileIndex = files.findIndex(f => f.name === fileName);
 
     //       if (fileIndex >= 0) {
     //         files[fileIndex].content = newCode;
-    //         roomFiles.set(roomId, files);
+    //         files.set(roomId, files);
     //       }
     //     }
     //     socket.to(roomId).emit("update-code", { newCode, fileName });

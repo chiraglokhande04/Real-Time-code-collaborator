@@ -1,22 +1,25 @@
 import React from "react";
 
-const FileTree = ({ files, onSelectFile }) => {
+
+
+export default function FileTree({ tree}) {
+ 
+
+  const renderTree = (nodes) => (
+    <ul style={{ listStyle: "none", paddingLeft: 20 }}>
+      {nodes.map((node) => (
+        <li key={node._id}>
+          {node.type === "folder" ? "📁" : "📄"} {node.name}
+          {node.children && node.children.length > 0 && renderTree(node.children)}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    <div className="text-white">
-      <h3 className="text-lg font-semibold mb-2">Files</h3>
-      <ul>
-        {files.map((file, index) => (
-          <li
-            key={index}
-            className="cursor-pointer p-1 hover:bg-gray-700"
-            onClick={() => onSelectFile(file)}
-          >
-            {file.name}
-          </li>
-        ))}
-      </ul>
+    <div>
+      <h3>Project Explorer</h3>
+      {renderTree(tree)}
     </div>
   );
-};
-
-export default FileTree;
+}

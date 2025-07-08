@@ -18,13 +18,6 @@ const ChatSchema = new mongoose.Schema({
   });
 
 
-  const nodeSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    type: { type: String, enum: ['file', 'folder'], required: true },
-    content: { type: String }, // Only for files
-    children: [this], // Only for folders
-  }, { _id: false });
-
 const roomSchema = new mongoose.Schema({
     roomId:{
         type:String,
@@ -45,7 +38,10 @@ const roomSchema = new mongoose.Schema({
         ref:'User'
     }],
     chatHistory: [ChatSchema],
-    folderStructure: [nodeSchema],
+    folderStructure: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'File',
+    },
     createdAt: {
         type: Date,
         default: Date.now

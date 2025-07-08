@@ -10,12 +10,14 @@ import Users from "./Users";
 import CodeTerminal from "./CodeTerminal";
 import { User } from "lucide-react";
 
+import FileTree from "./FileTree"; // Import the FileTree component
+
 const SlideBar = ({
   editorRef, language ,setLanguage ,
   users,
   activeTab,
   handleTabClick,
-  onFileUpload,
+  // onFileUpload,
   files,
   onSelectFile,
   roomId,
@@ -25,7 +27,9 @@ const SlideBar = ({
   unreadCount,
   setUnreadCount,
   sendMessage, // New prop from parent
-  socket
+  socket,
+
+  tree = [], // Default to empty array if not provided
 }) => {
   const [folderName, setFolderName] = useState(null);
 
@@ -126,22 +130,11 @@ const SlideBar = ({
               <FileUploader
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
-                onUpload={onFileUpload}
+                // onUpload={onFileUpload}
+                roomId ={roomId}
               />
             )}
-            <div className="max-h-40 overflow-y-auto border border-gray-600 rounded p-2">
-              <ul>
-                {files.map((file, index) => (
-                  <li
-                    key={index}
-                    className="cursor-pointer hover:bg-gray-700 p-2  rounded"
-                    onClick={() => onSelectFile(file)}
-                  >
-                    {file.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <FileTree tree = {tree}/>
           </div>
         )}
 
