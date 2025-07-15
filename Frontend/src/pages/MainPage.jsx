@@ -140,7 +140,7 @@ const MainPage = () => {
 
   const fetchTree = async () => {
     const res = await axios.get(`http://localhost:3000/api/files/tree/${id}`);
-    // console.log("Fetched file tree:", res.data);
+     console.log("Fetched file tree:", res.data);
     setTree(buildTree(res.data));
 
     const newFiles = [];
