@@ -28,8 +28,9 @@ const SlideBar = ({
   setUnreadCount,
   sendMessage, // New prop from parent
   socket,
-
-  tree = [], // Default to empty array if not provided
+  ydoc,
+  CodeEditor,
+  onFileUpload
 }) => {
   const [folderName, setFolderName] = useState(null);
 
@@ -130,11 +131,13 @@ const SlideBar = ({
               <FileUploader
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
-                // onUpload={onFileUpload}
-                roomId ={roomId}
+                handleUpload={onFileUpload}
               />
+
             )}
-            <FileTree tree = {tree}/>
+
+            <FileTree ydoc ={ydoc} CodeEditor = {CodeEditor} onFileClick = {onSelectFile}/>
+           
           </div>
         )}
 

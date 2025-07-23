@@ -2,11 +2,15 @@ import React, { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import SlideBar from "../components/SlideBar";
 import CodeEditor from "../components/CodeEditor";
-import TerminalComponent from "../components/TerminalComponent";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
 import axios from "axios";
+import * as Y from "yjs";
+
+const ydoc = new Y.Doc();
+
+
 
 const MainPage = () => {
   const { id } = useParams();
@@ -22,10 +26,13 @@ const MainPage = () => {
   const [slideBarWidth, setSlideBarWidth] = useState(0); // Track slidebar width
   const editorRef = useRef(null);
   const [language, setLanguage] = useState("javascript");
-
-  const [tree, setTree] = useState([]);
+  //const [fileContentsMap, setFileContentsMap] = useState(new Map());
 
   const socket = useSocket();
+
+
+  const foldersMap = ydoc.getMap("folders");
+  const fileContentsMap = ydoc.getMap("fileContents");
 
   // Handle sidebar tab clicks
   const handleTabClick = (tab) => {
@@ -37,175 +44,125 @@ const MainPage = () => {
     }
   };
 
-  // const handleFileUpload = (uploadedFiles) => {
-  //   const newFiles = [];
+  useEffect(() => {
+    if (!foldersMap) return;
 
-  //   uploadedFiles.forEach((file) => {
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       const fileContent = e.target.result;
-  //       const newFile = {
-  //         name: file.webkitRelativePath || file.name,
-  //         content: fileContent,
-  //         file: file,
-  //       };
-  //       newFiles.push(newFile);
+    const updateFilesFromMap = () => {
+      const filesArray = [];
+      foldersMap.forEach((value) => {
+        filesArray.push(value);
+      });
+      setFiles(filesArray);
+    };
 
-  //       if (newFiles.length === uploadedFiles.length) {
-  //         // Update local state
-  //         setFiles((prevFiles) => {
-  //           const updatedFiles = [...prevFiles, ...newFiles];
+    // Initial sync from Yjs map to React state
+    updateFilesFromMap();
 
-  //           // Share files with others in the room
-  //           socket.emit("share-files", {
-  //             roomId: id,
-  //             files: updatedFiles.map((file) => ({
-  //               name: file.name,
-  //               content: file.content,
-  //             })),
-  //           });
+    // Listen for any changes inside foldersMap or its children
+    foldersMap.observeDeep(updateFilesFromMap);
 
-  //           return updatedFiles;
-  //         });
-  //       }
-  //     };
-  //     reader.readAsText(file);
-  //   });
-  // };
-
-
-  // Listen for file updates from other users
-  // useEffect(() => {
-  //   if (!socket) return;
-
-  //   const handleReceivedFiles = (receivedFiles) => {
-  //     // Convert received files to the format we use locally
-  //     const formattedFiles = receivedFiles.map((file) => {
-  //       // Create a blob from the file content
-  //       const blob = new Blob([file.content], { type: "text/plain" });
-
-  //       // Create a File object from the blob
-  //       const fileObject = new File([blob], file.name, { type: "text/plain" });
-
-  //       return {
-  //         name: file.name,
-  //         content: file.content,
-  //         file: fileObject,
-  //       };
-  //     });
-
-  //     // Update local files state, but don't duplicate files
-  //     setFiles((prevFiles) => {
-  //       const existingFileNames = new Set(prevFiles.map((f) => f.name));
-  //       const newFiles = formattedFiles.filter(
-  //         (file) => !existingFileNames.has(file.name)
-  //       );
-
-  //       if (newFiles.length > 0) {
-  //         return [...prevFiles, ...newFiles];
-  //       }
-  //       return prevFiles;
-  //     });
-  //   };
-
-  //   socket.on("receive-files", handleReceivedFiles);
-
-  //   // When joining a room, request any existing files
-  //   socket.emit("get-room-files", id);
-
-  //   return () => {
-  //     socket.off("receive-files", handleReceivedFiles);
-  //   };
-  // }, [socket, id]);
+    return () => {
+      foldersMap.unobserveDeep(updateFilesFromMap);
+    };
+  }, [foldersMap]);
 
   useEffect(() => {
+    if (!socket) return;
+  
+    const handleYjsUpdated = ({ update: base64Update }) => {
+      const binaryStr = atob(base64Update);
+      const update = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        update[i] = binaryStr.charCodeAt(i);
+      }
+      Y.applyUpdate(ydoc, update);
+    };
+  
+    socket.on("yjs-updated", handleYjsUpdated);
+  
+    return () => {
+      socket.off("yjs-updated", handleYjsUpdated);
+    };
+  }, [socket]);
+  
+  
 
+
+
+
+  const handleUpload = async (e) => {
+    const files = Array.from(e.target.files);
+
+ 
+    for (const file of files) {
+      const path = file.webkitRelativePath || file.name;
+
+      // Store folder metadata
+      foldersMap.set(path, {
+        name: file.name,
+        path: path,
+        isFolder: false,
+      });
+
+      // Read content
+      const content = await file.text();
+      const ytext = new Y.Text();
+      ytext.insert(0, content);
+
+      // Store file content
+      fileContentsMap.set(path, ytext);
+    }
+    // Encode Yjs doc update
+    const update = Y.encodeStateAsUpdate(ydoc);
+const base64Update = btoa(String.fromCharCode(...update));
 
     if (!socket) {
       console.warn("❌ socket is not initialized");
       return;
+    } 
+    // Emit update to backend
+    socket.emit("yjs-update", { roomId: id, update: base64Update });
+
+
+    alert("Files uploaded and synced!");
+  };
+
+
+
+
+
+
+  const handleSelectFile = (item) => {
+    if (!item || item.isFolder) return;
+
+    setSelectedFile(item.path);
+    // Optional: Auto-set language based on file extension
+    const ext = item.path.split('.').pop();
+    let lang = "plaintext";
+
+    switch (ext) {
+      case "js":
+        lang = "javascript";
+        break;
+      case "ts":
+        lang = "typescript";
+        break;
+      case "py":
+        lang = "python";
+        break;
+      case "html":
+        lang = "html";
+        break;
+      case "css":
+        lang = "css";
+        break;
+      case "json":
+        lang = "json";
+        break;
+      // add more cases as needed
     }
 
-    const handleFileUploaded = () => {
-      fetchTree();
-    };
-  
-    socket.on("fileUploaded", handleFileUploaded);
-  
-    return () => {
-      socket.off("fileUploaded", handleFileUploaded);
-    };
-  }, [id, socket]);
-  
-
-  const fetchTree = async () => {
-    const res = await axios.get(`http://localhost:3000/api/files/tree/${id}`);
-     console.log("Fetched file tree:", res.data);
-    setTree(buildTree(res.data));
-
-    const newFiles = [];
-
-  const traverse = (nodes) => {
-    for (let node of nodes) {
-      if (node.type === "file") {
-        newFiles.push(node);
-      }
-      if (node.children && node.children.length > 0) {
-        traverse(node.children);
-      }
-    }
-  };
-
-  traverse(tree);
-  setFiles(newFiles);
-  console.log("Files fetched:", newFiles);
-  setSelectedFile(newFiles.length > 0 ? newFiles[0] : null);
-  };
-
-  const buildTree = (items, parentId = null) => {
-    return items
-      .filter(item => String(item.parentId) === String(parentId))
-      .map(item => ({
-        ...item,
-        children: buildTree(items, item._id)
-      }));
-  };
-
-
-
-
-
-
-
-  const handleSelectFile = (file) => {
-    if (!file.file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const fileContent = event.target.result;
-
-      // Update editor & selected file state
-      setCode(fileContent);
-      setSelectedFile(file);
-
-      // Ensure file is added to open files
-      setOpenFiles((prev) => {
-        if (!prev.some((f) => f.name === file.name)) {
-          return [...prev, file];
-        }
-        return prev;
-      });
-
-      // Emit socket event to notify others about file selection
-      socket.emit("code-change", {
-        roomId: id,
-        newCode: fileContent,
-        fileName: file.name,
-      });
-    };
-
-    reader.readAsText(file.file);
+    setLanguage(lang);
   };
 
   // Get users in room
@@ -315,11 +272,9 @@ const MainPage = () => {
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
-
     // Update the content of the selected file if any
     if (selectedFile) {
       selectedFile.content = newCode;
-
       // Update the files array with the updated file
       setFiles((prevFiles) => {
         return prevFiles.map((file) =>
@@ -369,8 +324,9 @@ const MainPage = () => {
             setUnreadCount={setUnreadCount}
             sendMessage={sendMessage}
             socket={socket}
-
-            tree ={tree}
+            ydoc={ydoc}
+            CodeEditor={CodeEditor}
+            onFileUpload = {handleUpload}
           />
         </div>
 
@@ -379,18 +335,20 @@ const MainPage = () => {
           {/* Code Editor */}
           <div className="flex-1 bg-gray-900 overflow-hidden">
             <CodeEditor
+              ydoc={ydoc}
               editorRef={editorRef}
               language={language}
               setLanguage={setLanguage}
               code={code}
               setCode={setCode}
-              activeFile={selectedFile ? selectedFile.name : ""}
+              activeFile={selectedFile || ""}
               openFiles={openFiles}
               setOpenFiles={setOpenFiles}
               setSelectedFile={setSelectedFile}
               onCodeChange={handleCodeChange}
               username={username}
               socket={socket}
+              fileContentsMap={fileContentsMap}
             />
           </div>
         </div>

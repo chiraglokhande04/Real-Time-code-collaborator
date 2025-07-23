@@ -35,22 +35,51 @@
 
 import React from "react";
 import * as Y from "yjs";
+// import { io } from "socket.io-client";
 
-export default function FileUploader({ ydoc }) {
-  const handleUpload = async (e) => {
-    const files = Array.from(e.target.files);
+// const socket = io("http://localhost:3000"); // Adjust port if needed
 
-    // Use a Y.Map to store file path → content
-    const fileMap = ydoc.getMap("files");
+export default function FileUploader({handleUpload }) {
+  // const foldersMap = ydoc.getMap("folders");
+  // const fileContentsMap = ydoc.getMap("fileContents");
+ 
 
-    for (const file of files) {
-      const relativePath = file.webkitRelativePath;
-      const content = await file.text();
+  // const handleUpload = async (e) => {
+  //   const files = Array.from(e.target.files);
 
-      // Save in shared Y.Map
-      fileMap.set(relativePath, content);
-    }
-  };
+  //   for (const file of files) {
+  //     const path = file.webkitRelativePath || file.name;
+
+  //     // Store folder metadata
+  //     foldersMap.set(path, {
+  //       name: file.name,
+  //       path: path,
+  //       isFolder: false,
+  //     });
+
+  //     // Read content
+  //     const content = await file.text();
+  //     const ytext = new Y.Text();
+  //     ytext.insert(0, content);
+
+  //     // Store file content
+  //     fileContentsMap.set(path, ytext);
+  //   }
+
+  //   // Encode Yjs doc update
+  //   const update = Y.encodeStateAsUpdate(ydoc);
+  
+
+  //   // Emit update to backend
+  //   socket.emit("yjs-update", { roomId, update }, () => {
+  //     console.log("Yjs update sent to backend:", update);
+  //   });
+
+ 
+  //   console.log("map ::: ",fileContentsMap);
+
+  //   alert("Files uploaded and synced!");
+  // };
 
   return (
     <div>
@@ -64,3 +93,4 @@ export default function FileUploader({ ydoc }) {
     </div>
   );
 }
+
