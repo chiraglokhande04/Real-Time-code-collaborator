@@ -53,6 +53,10 @@ const setupSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("✅ Socket Connected:", socket.id);
 
+    // Add this line at the top of your socket.js file
+const yjsStates = new Map();
+
+
     // 🟢 Create Room
     socket.on("create-room", async (roomName) => {
       try {
@@ -77,6 +81,7 @@ const setupSocket = (server) => {
     
         // Join room
         socket.join(roomId);
+        socket.roomId = roomId; 
     
         // Emit room creation event to the user
         socket.emit("room-created", {
@@ -116,6 +121,7 @@ const setupSocket = (server) => {
         const displayName = socket.user.displayName;
     
         socket.join(roomId);
+        socket.roomId = roomId; 
     
         let room = await Room.findOne({ roomId }).populate('members', '_id username');
     
@@ -151,6 +157,8 @@ const setupSocket = (server) => {
           _id: member._id,
           username: member.username,
         }));
+
+       
     
         io.to(roomId).emit("update-users", updatedUsers);
     
@@ -193,137 +201,49 @@ const setupSocket = (server) => {
   
     });
 
-    // socket.on("share-files", async ({ roomId, files }) => {
-    //   try {
-    //     if (!roomId || !files || files.length === 0) {
-    //       socket.emit("error", "Invalid room ID or files");
-    //       return;
-    //     }
 
-    //     // Ensure the room exists
-    //     const room = await Room.findOne({ roomId });
-    //     if (!room) {
-    //       socket.emit("error", "Room not found");
-    //       return;
-    //     }
+    // socket.on("yjs-update", ( update ) => {
 
-    //     console.log(`📂 Sharing files in room: ${roomId}`,files);
+    //   const id = socket.roomId
 
-    //     // Process each file
-    //     const filePromises = files.map(async (file) => {
-    //       // Here you would typically upload the file to a storage service
-    //       // For simplicity, we just return the file name and size
-    //       return {
-    //         name: file.name,
-    //         size: file.size,
-    //         type: file.type,
-    //         lastModified: new Date(file.lastModified),
-    //       };
-    //     });
-
-    //     const uploadedFiles = await Promise.all(filePromises);
-
-    //     // Emit the files to all users in the room
-    //     io.to(roomId).emit("files-shared", { roomId, files: uploadedFiles });
-
-    //   } catch (error) {
-    //     console.error("❌ Error sharing files:", error);
-    //     socket.emit("error", "Failed to share files");
+    //   console.log("id",id)
+    //   if (!id) {
+    //     console.error("❌ No room ID found for Yjs update");
+    //     return;
     //   }
+        
+    //    console.log("📥 Yjs update received in backend for room:", id);
+    //    socket.to(id).emit("yjs-updated",  update );
+    //   console.log("📤 Yjs update emitted to room:", id);
     // });
 
-    socket.on("yjs-update", ({ roomId, update }) => {
-      
-       console.log("📥 Yjs update received in backend for room:", roomId);
-       socket.to(roomId).emit("yjs-updated", { update });
-      console.log("📤 Yjs update emitted to room:", roomId);
+
+    socket.on("yjs-update", (update) => {
+      const id = socket.roomId;
+      if (!id){
+        console.error("❌ No room ID found for Yjs update");
+        return
+      };
+  
+      // Store/update the state for future syncs
+      if (!yjsStates.has(id)) {
+        yjsStates.set(id, []);
+      }
+      yjsStates.get(id).push(update);
+  
+      socket.to(id).emit("yjs-updated", update);
+    });
+  
+    // Handle Yjs state request
+    socket.on("request-yjs-sync", () => {
+      const id = socket.roomId;
+      const updates = yjsStates.get(id) || [];
+      updates.forEach(update => {
+        socket.emit("yjs-updated", update);
+      });
     });
 
 
-
-    // 📝 Handle Code Changes
-    // socket.on("code-change", ({ roomId, newCode, fileName }) => {
-    //   if (rooms[roomId]) {
-    //     rooms[roomId].content = newCode;
-    //     if (fileName && files.has(roomId)) {
-    //       const files = files.get(roomId);
-    //       const fileIndex = files.findIndex(f => f.name === fileName);
-
-    //       if (fileIndex >= 0) {
-    //         files[fileIndex].content = newCode;
-    //         files.set(roomId, files);
-    //       }
-    //     }
-    //     socket.to(roomId).emit("update-code", { newCode, fileName });
-    //   }
-    // });
-
-    // 💬 Handle Sending Messages
-    // socket.on("sendMessage", async ({ roomId, sender, message }) => {
-    //   if (!roomId || !sender || !message.trim()) return;
-
-    //   try {
-    //     const chatMessage = new Chat({
-    //       roomId,
-    //       sender,
-    //       message,
-    //       timestamp: new Date(),
-    //     });
-    //     await chatMessage.save();
-
-    //     const newMessage = {
-    //       sender,
-    //       message,
-    //       timestamp: chatMessage.timestamp,
-    //     };
-
-    //     io.to(roomId).emit("newMessage", newMessage);
-    //     // io.to(roomId).emit("chat:notification", { sender, message }); // 🔔 Emit notification
-    //     Object.entries(rooms[roomId].users).forEach(([id, users]) => {
-    //       if (!users.chatOpen) {
-    //         io.to(id).emit("notification", { sender, message });
-    //       }
-    //     });
-    //     console.log(`💬 Message Sent in ${roomId}: ${sender} -> ${message}`);
-    //   } catch (error) {
-    //     console.error("❌ Error sending message:", error);
-    //   }
-    // });
-
-    // 🔄 Get Username
-    // socket.on("get-username", (roomId, callback) => {
-    //   if (rooms[roomId] && rooms[roomId].users[socket.id]) {
-    //     callback(rooms[roomId].users[socket.id].username);
-    //   } else {
-    //     callback("Guest");
-    //   }
-    // });
-
-    // 🖱️ Cursor Position
-    // socket.on("cursor-move", ({ username, position }) => {
-    //   socket.broadcast.emit("update-cursor", { username, position });
-    // });
-
-
-
-    
-
-    // ❌ Handle Disconnect
-    // socket.on("disconnect", () => {
-    //   console.log("❌ Socket Disconnected:", socket.id);
-
-    //   Object.keys(rooms).forEach((roomId) => {
-    //     if (rooms[roomId]?.users[socket.id]) {
-    //       delete rooms[roomId].users[socket.id];
-    //       io.to(roomId).emit("update-users", Object.values(rooms[roomId].users));
-
-    //       if (Object.keys(rooms[roomId].users).length === 0) {
-    //         delete rooms[roomId];
-    //         console.log(`🗑️ Room ${roomId} deleted (No users left)`);
-    //       }
-    //     }
-    //   });
-    // });
   });
 };
 

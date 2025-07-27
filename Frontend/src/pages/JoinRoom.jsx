@@ -4,7 +4,7 @@ import { useSocket } from "../context/socketContext";
 import { useNavigate,Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
-const CreateRoom = () => {
+const JoinRoom = () => {
   const [roomId, setRoomId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const socket = useSocket(); // ✅ Use the global socket reference
@@ -15,6 +15,7 @@ const CreateRoom = () => {
 
     const handleRoomJoined = (roomId) => {
       console.log("✅ Received roomId:", roomId);
+      socket.emit('request-yjs-sync');
       toast.success("🎉 Room Joined!");
       navigate(`/room/${roomId}`);
     };
@@ -134,4 +135,4 @@ const CreateRoom = () => {
   );
 };
 
-export default CreateRoom;
+export default JoinRoom;

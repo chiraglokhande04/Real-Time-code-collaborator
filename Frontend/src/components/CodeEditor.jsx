@@ -177,7 +177,7 @@ import MonacoEditor from "@monaco-editor/react";
 
 const CodeEditor = ({
   activeFile,
-  fileContentsMap,
+  filesMap,
   username,
   socket,
   editorRef,
@@ -207,10 +207,10 @@ const CodeEditor = ({
 
   // --- Sync local value with Y.Text ---
   useEffect(() => {
-    if (!activeFile || !fileContentsMap) return;
+    if (!activeFile || !filesMap) return;
 
-    const yText = fileContentsMap.get(activeFile);
-    console.log("YText actual value:", yText.toString());
+    const yText = filesMap.get(activeFile);
+
     if (!yText) {
       console.warn("No Y.Text found for", activeFile);
       yTextRef.current = null;

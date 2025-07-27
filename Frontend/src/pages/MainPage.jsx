@@ -5,7 +5,8 @@ import CodeEditor from "../components/CodeEditor";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
-import axios from "axios";
+import { uploadToCloudinary } from "../utils/utils";
+
 import * as Y from "yjs";
 
 const ydoc = new Y.Doc();
@@ -32,7 +33,8 @@ const MainPage = () => {
 
 
   const foldersMap = ydoc.getMap("folders");
-  const fileContentsMap = ydoc.getMap("fileContents");
+  // const fileContentsMap = ydoc.getMap("fileContents");
+  const filesMap = ydoc.getMap("files");
 
   // Handle sidebar tab clicks
   const handleTabClick = (tab) => {
@@ -68,76 +70,76 @@ const MainPage = () => {
 
   useEffect(() => {
     if (!socket) return;
-  
-    const handleYjsUpdated = ({ update: base64Update }) => {
-      const binaryStr = atob(base64Update);
-      const update = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        update[i] = binaryStr.charCodeAt(i);
+
+    // Handler references to clean up later
+    const handleYjsUpdate = (update) => {
+      socket.emit('yjs-update', update );
+    };
+
+    const handleSocketUpdate = (update) => {
+      try {
+        console.log("listening updated event")
+        const updateUint8 = update instanceof Uint8Array ? update : new Uint8Array(update);
+        Y.applyUpdate(ydoc, updateUint8);
+      } catch (err) {
+        console.error("Failed to apply update:", err);
       }
-      Y.applyUpdate(ydoc, update);
+    };
+
+    ydoc.on('update', handleYjsUpdate);
+    socket.on('yjs-updated', handleSocketUpdate);
+
+    //  socket.emit('join-room', id);
+    //  socket.emit('request-yjs-sync');
+
+    return () => {
+      ydoc.off('update', handleYjsUpdate);
+      socket.off('yjs-update', handleSocketUpdate);
+    };
+  }, [socket, id]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    const syncToPeers = () => {
+      const update = Y.encodeStateAsUpdate(ydoc);
+      socket.emit("yjs-update",  update );
     };
   
-    socket.on("yjs-updated", handleYjsUpdated);
+    filesMap.observeDeep(syncToPeers);
   
     return () => {
-      socket.off("yjs-updated", handleYjsUpdated);
+      filesMap.unobserveDeep(syncToPeers);
     };
-  }, [socket]);
-  
-  
-
+  }, [socket, filesMap]);
 
 
 
   const handleUpload = async (e) => {
     const files = Array.from(e.target.files);
+    const roomId = id; // Get room ID from params
 
- 
-    for (const file of files) {
-      const path = file.webkitRelativePath || file.name;
+    const res = await uploadToCloudinary(files, roomId); // content upload (step 3)
 
-      // Store folder metadata
-      foldersMap.set(path, {
-        name: file.name,
-        path: path,
+    for (const file of res.files) {
+      const path = file.path || file.name; // Use path if available, otherwise fallback to name
+      const metadata = {
+        filename: file.name,
+        fileId: file.cloudinaryPublicId,
+        cloudUrl: file.url,
+        path: file.path,
         isFolder: false,
-      });
-
-      // Read content
-      const content = await file.text();
-      const ytext = new Y.Text();
-      ytext.insert(0, content);
-
-      // Store file content
-      fileContentsMap.set(path, ytext);
+        type: file.type,
+      };
+      foldersMap.set(path, metadata); // Yjs folder structure sync
     }
-    // Encode Yjs doc update
-    const update = Y.encodeStateAsUpdate(ydoc);
-const base64Update = btoa(String.fromCharCode(...update));
+  }
 
-    if (!socket) {
-      console.warn("❌ socket is not initialized");
-      return;
-    } 
-    // Emit update to backend
-    socket.emit("yjs-update", { roomId: id, update: base64Update });
-
-
-    alert("Files uploaded and synced!");
-  };
-
-
-
-
-
-
-  const handleSelectFile = (item) => {
+  const handleSelectFile = async (item) => {
     if (!item || item.isFolder) return;
 
-    setSelectedFile(item.path);
-    // Optional: Auto-set language based on file extension
-    const ext = item.path.split('.').pop();
+    const ext = item.path.split(".").pop();
     let lang = "plaintext";
 
     switch (ext) {
@@ -159,11 +161,37 @@ const base64Update = btoa(String.fromCharCode(...update));
       case "json":
         lang = "json";
         break;
-      // add more cases as needed
+      // add more if needed
     }
 
+    // Load file content into Yjs if not already loaded
+    if (!filesMap.has(item.name)) {
+      try {
+        const res = await fetch(item.cloudUrl);
+        const content = await res.text();
+        // const yText = new Y.Text();
+        // yText.insert(0, content);
+        // filesMap.set(item.name, yText);
+        ydoc.transact(() => {
+          if (!filesMap.has(item.name)) {
+            const yText = new Y.Text();
+            yText.insert(0, content);
+            filesMap.set(item.name, yText);
+          }
+        });
+      } catch (err) {
+        console.error("Error loading file content:", err);
+        alert("Failed to load file");
+        return; // Don't continue if loading failed
+      }
+    }
+
+    // Only set file once it's safely loaded
+    setSelectedFile(item.name);
     setLanguage(lang);
   };
+
+
 
   // Get users in room
   useEffect(() => {
@@ -326,7 +354,7 @@ const base64Update = btoa(String.fromCharCode(...update));
             socket={socket}
             ydoc={ydoc}
             CodeEditor={CodeEditor}
-            onFileUpload = {handleUpload}
+            onFileUpload={handleUpload}
           />
         </div>
 
@@ -348,7 +376,7 @@ const base64Update = btoa(String.fromCharCode(...update));
               onCodeChange={handleCodeChange}
               username={username}
               socket={socket}
-              fileContentsMap={fileContentsMap}
+              filesMap={filesMap}
             />
           </div>
         </div>

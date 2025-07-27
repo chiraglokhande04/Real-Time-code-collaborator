@@ -16,6 +16,8 @@ function buildTreeFromMap(foldersObj) {
           path: parts.slice(0, index + 1).join("/"),
           isFolder: !isFile,
           children: {},
+          cloudUrl : value.cloudUrl || null,
+          fileId : value.fileId || null,
         };
       }
 
@@ -29,9 +31,6 @@ function buildTreeFromMap(foldersObj) {
 
 function FolderTree({ tree, onFileClick }) {
   const [expanded, setExpanded] = useState({});
-
-
-  
 
   const toggleFolder = (path) => {
     setExpanded((prev) => ({ ...prev, [path]: !prev[path] }));
@@ -59,41 +58,17 @@ function FolderTree({ tree, onFileClick }) {
 }
 
 
-export default function FileTree({ ydoc, CodeEditor,onFileClick }) {
+export default function FileTree({ ydoc,onFileClick }) {
   const foldersMap = ydoc.getMap("folders");
 
   const [tree, setTree] = useState({});
-
-  // Build tree from folders map and update on changes
-  // useEffect(() => {
-  //   if (!foldersMap || typeof foldersMap.forEach !== "function") {
-  //     console.warn("foldersMap is not a Y.Map:", foldersMap);
-  //     setTree({});
-  //     return;
-  //   }
-
-  //   const updateTree = () => {
-  //     const obj = {};
-  //     foldersMap.forEach((value, key) => {
-  //       obj[key] = value;
-  //     });
-  //     const treeData = buildTreeFromMap(obj);
-  //     setTree(treeData);
-  //   };
-
-  //   updateTree();
-
-  //   foldersMap.observe(updateTree);
-  //   return () => foldersMap.unobserve(updateTree);
-  // }, [foldersMap]);
-
 
   useEffect(() => {
     if (!foldersMap) return;
   
     const updateTree = () => {
       const obj = {};
-      console.log("updateTree called", foldersMap.toJSON());
+    
 
       foldersMap.forEach((value, key) => {
         obj[key] = value;
