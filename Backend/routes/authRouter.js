@@ -17,8 +17,9 @@ authRouter.get('/google/callback',
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
         });
+        
 
         res.redirect(`${process.env.CLIENT_URL}/logged`);
     }

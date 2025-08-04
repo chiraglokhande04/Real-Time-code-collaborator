@@ -8,6 +8,10 @@ const setupSocket = require('./config/socket');
 const app = express();
 const server = http.createServer(app); // Creating HTTP server
 
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
+
 const cors = require("cors");
 app.use(cors({
   origin: 'http://localhost:5173', // Change this to your frontend URL
