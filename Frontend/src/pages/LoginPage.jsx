@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {useNavigate} from 'react-router-dom';
+
 import LoadingOverlay from "../components/LoadingOverlay";
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
 
   useEffect(() => {
     setIsLoaded(true);
@@ -159,7 +159,7 @@ export default function LoginPage() {
                     </span>
                   </div>
                 </button>
-                {loading && <LoadingOverlay className='h-screen' />}
+                {loading && <LoadingOverlay className='h-screen w-full' />}
               </div>
 
               {/* Enhanced feature grid */}

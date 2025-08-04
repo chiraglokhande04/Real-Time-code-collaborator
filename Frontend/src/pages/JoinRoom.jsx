@@ -1,96 +1,11 @@
-// import React, { useState, useEffect } from "react";
-// import { useSocket } from "../context/socketContext";
-// import { useNavigate } from "react-router-dom";
-// import toast, { Toaster } from "react-hot-toast";
-
-// const JoinRoom = () => {
-//   const [roomId, setRoomId] = useState("");
-//   const [username, setUsername] = useState("");
-//   const socket = useSocket(); // ✅ Use global socket reference
-//   const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   if (!socket) return;
-
-  //   const handleRoomJoined = (roomId) => {
-  //     console.log("✅ Received roomId:", roomId);
-  //     toast.success("🎉 Room Joined!");
-  //     navigate(`/room/${roomId}`);
-  //   };
-
-  //   socket.on("room-joined", handleRoomJoined);
-  //   return () => {
-  //     socket.off("room-joined", handleRoomJoined);
-  //   };
-  // }, [socket, navigate]);
-
-  // const joinRoom = () => {
-  //   if (!socket) {
-  //     toast.error("⚠️ Socket not connected!");
-  //     return;
-  //   }
-  
-  //   const trimmedUsername = username.trim();
-  //   const trimmedRoomId = roomId.trim();
-  
-  //   if (!trimmedUsername || !trimmedRoomId) {
-  //     toast.error("⚠️ Username and Room ID are required!");
-  //     return;
-  //   }
-  
-  //   console.log("📡 Emitting join-room:", { username: trimmedUsername, roomId: trimmedRoomId });
-  
-  //   socket.emit("join-room", trimmedUsername, trimmedRoomId); // Ensure correct format
-  // };
-
-//   return (
-//     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
-//       <Toaster />
-//       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 text-center">
-//         <h2 className="text-2xl font-semibold my-4">Join a Room</h2>
-
-//         <input
-//           type="text"
-//           placeholder="Enter Username"
-//           className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-//           value={username}
-//           onChange={(e) => setUsername(e.target.value)}
-//         />
-//         <input
-//           type="text"
-//           placeholder="Enter Room ID"
-//           className="w-full p-2 mt-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-//           value={roomId}
-//           onChange={(e) => setRoomId(e.target.value)}
-//         />
-
-//         <div className="mt-6">
-//           <button
-//             onClick={joinRoom}
-//             className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg w-full"
-//           >
-//             Join Room
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default JoinRoom;
-
-
-
-
 import React, { useState, useEffect } from "react";
 import { Code, Users, ArrowRight, Sparkles, Terminal, Coffee, Code2 } from "lucide-react";
 import { useSocket } from "../context/socketContext";
 import { useNavigate,Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
-const CreateRoom = () => {
+const JoinRoom = () => {
   const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const socket = useSocket(); // ✅ Use the global socket reference
   const navigate = useNavigate();
@@ -100,6 +15,7 @@ const CreateRoom = () => {
 
     const handleRoomJoined = (roomId) => {
       console.log("✅ Received roomId:", roomId);
+      socket.emit('request-yjs-sync');
       toast.success("🎉 Room Joined!");
       navigate(`/room/${roomId}`);
     };
@@ -115,18 +31,13 @@ const CreateRoom = () => {
       toast.error("⚠️ Socket not connected!");
       return;
     }
-  
-    const trimmedUsername = username.trim();
-    const trimmedRoomId = roomId.trim();
-  
-    if (!trimmedUsername || !trimmedRoomId) {
-      toast.error("⚠️ Username and Room ID are required!");
+    const trimmedRoomId = roomId.trim(); 
+    if (!trimmedRoomId) {
+      toast.error("⚠️Room ID are required!");
       return;
     }
-  
-    console.log("📡 Emitting join-room:", { username: trimmedUsername, roomId: trimmedRoomId });
-  
-    socket.emit("join-room", trimmedUsername, trimmedRoomId); // Ensure correct format
+    console.log("📡 Emitting join-room:", {roomId: trimmedRoomId });
+    socket.emit("join-room",trimmedRoomId); // Ensure correct format
   };
 
 
@@ -160,23 +71,6 @@ const CreateRoom = () => {
               <h2 className="text-2xl font-semibold text-white">Get Started</h2>
             </div>
             <p className="text-slate-400">Enter your details to begin collaboration</p>
-          </div>
-
-          {/* Username Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Username
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Enter your username"
-                className="w-full p-4 rounded-xl bg-slate-700/50 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-white placeholder-slate-400 transition-all duration-200"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <Terminal className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            </div>
           </div>
 
           {/* Room ID Input */}
@@ -228,30 +122,6 @@ const CreateRoom = () => {
               </div>
             </Link>
           </div>
-
-          {/* Features */}
-          {/* <div className="mt-8 pt-6 border-t border-slate-700/50">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="group">
-                <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Code className="w-5 h-5 text-cyan-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Live Coding</p>
-              </div>
-              <div className="group">
-                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Users className="w-5 h-5 text-purple-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Multi-User</p>
-              </div>
-              <div className="group">
-                <div className="bg-gradient-to-br from-pink-500/20 to-pink-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Coffee className="w-5 h-5 text-pink-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Instant Sync</p>
-              </div>
-            </div>
-          </div> */}
         </div>
 
         {/* Footer */}
@@ -265,4 +135,4 @@ const CreateRoom = () => {
   );
 };
 
-export default CreateRoom;
+export default JoinRoom;

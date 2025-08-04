@@ -5,6 +5,13 @@ import CodeEditor from "../components/CodeEditor";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
+import { uploadToCloudinary } from "../utils/utils";
+
+import * as Y from "yjs";
+
+const ydoc = new Y.Doc();
+
+
 
 const MainPage = () => {
   const { id } = useParams();
@@ -13,6 +20,7 @@ const MainPage = () => {
   const [openFiles, setOpenFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const [code, setCode] = useState("// Write your code here...");
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -20,129 +28,199 @@ const MainPage = () => {
   const [slideBarWidth, setSlideBarWidth] = useState(0); // Track slidebar width
   const editorRef = useRef(null);
   const [language, setLanguage] = useState("javascript");
+  //const [fileContentsMap, setFileContentsMap] = useState(new Map());
 
   const socket = useSocket();
+
+
+  const foldersMap = ydoc.getMap("folders");
+  // const fileContentsMap = ydoc.getMap("fileContents");
+  const filesMap = ydoc.getMap("files");
 
   // Handle sidebar tab clicks
   const handleTabClick = (tab) => {
     setActiveTab(activeTab === tab ? null : tab);
 
     // Reset unread count when opening chat tab
+    if (socket && username) {
+      const isChatNowOpen = tab === "chat";
+      socket.emit("chat-open-status", { roomId: id, chatOpen: isChatNowOpen });
+    }
+    
     if (tab === "chat") {
       setUnreadCount(0);
     }
+    
   };
 
-  const handleFileUpload = (uploadedFiles) => {
-    const newFiles = [];
+  useEffect(() => {
+    if (!foldersMap) return;
 
-    uploadedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContent = e.target.result;
-        const newFile = {
-          name: file.webkitRelativePath || file.name,
-          content: fileContent,
-          file: file,
-        };
-        newFiles.push(newFile);
+    const updateFilesFromMap = () => {
+      const filesArray = [];
+      foldersMap.forEach((value) => {
+        filesArray.push(value);
+      });
+      setFiles(filesArray);
+    };
 
-        if (newFiles.length === uploadedFiles.length) {
-          // Update local state
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles, ...newFiles];
+    // Initial sync from Yjs map to React state
+    updateFilesFromMap();
 
-            // Share files with others in the room
-            socket.emit("share-files", {
-              roomId: id,
-              files: updatedFiles.map((file) => ({
-                name: file.name,
-                content: file.content,
-              })),
-            });
+    // Listen for any changes inside foldersMap or its children
+    foldersMap.observeDeep(updateFilesFromMap);
 
-            return updatedFiles;
-          });
-        }
-      };
-      reader.readAsText(file);
-    });
-  };
+    return () => {
+      foldersMap.unobserveDeep(updateFilesFromMap);
+    };
+  }, [foldersMap]);
 
-  // Listen for file updates from other users
   useEffect(() => {
     if (!socket) return;
 
-    const handleReceivedFiles = (receivedFiles) => {
-      // Convert received files to the format we use locally
-      const formattedFiles = receivedFiles.map((file) => {
-        // Create a blob from the file content
-        const blob = new Blob([file.content], { type: "text/plain" });
-
-        // Create a File object from the blob
-        const fileObject = new File([blob], file.name, { type: "text/plain" });
-
-        return {
-          name: file.name,
-          content: file.content,
-          file: fileObject,
-        };
-      });
-
-      // Update local files state, but don't duplicate files
-      setFiles((prevFiles) => {
-        const existingFileNames = new Set(prevFiles.map((f) => f.name));
-        const newFiles = formattedFiles.filter(
-          (file) => !existingFileNames.has(file.name)
-        );
-
-        if (newFiles.length > 0) {
-          return [...prevFiles, ...newFiles];
-        }
-        return prevFiles;
-      });
+    // Handler references to clean up later
+    const handleYjsUpdate = (update) => {
+      socket.emit('yjs-update', update );
     };
 
-    socket.on("receive-files", handleReceivedFiles);
+    const handleSocketUpdate = (update) => {
+      try {
+        console.log("listening updated event")
+        const updateUint8 = update instanceof Uint8Array ? update : new Uint8Array(update);
+        Y.applyUpdate(ydoc, updateUint8);
+      } catch (err) {
+        console.error("Failed to apply update:", err);
+      }
+    };
 
-    // When joining a room, request any existing files
-    socket.emit("get-room-files", id);
+    ydoc.on('update', handleYjsUpdate);
+    socket.on('yjs-updated', handleSocketUpdate);
+
+    //  socket.emit('join-room', id);
+    //  socket.emit('request-yjs-sync');
 
     return () => {
-      socket.off("receive-files", handleReceivedFiles);
+      ydoc.off('update', handleYjsUpdate);
+      socket.off('yjs-update', handleSocketUpdate);
     };
   }, [socket, id]);
 
-  const handleSelectFile = (file) => {
-    if (!file.file) return;
 
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const fileContent = event.target.result;
-
-      // Update editor & selected file state
-      setCode(fileContent);
-      setSelectedFile(file);
-
-      // Ensure file is added to open files
-      setOpenFiles((prev) => {
-        if (!prev.some((f) => f.name === file.name)) {
-          return [...prev, file];
-        }
-        return prev;
-      });
-
-      // Emit socket event to notify others about file selection
-      socket.emit("code-change", {
-        roomId: id,
-        newCode: fileContent,
-        fileName: file.name,
-      });
+  useEffect(() => {
+    if (!socket) return;
+  
+    const syncToPeers = () => {
+      const update = Y.encodeStateAsUpdate(ydoc);
+      socket.emit("yjs-update",  update );
     };
+  
+    filesMap.observeDeep(syncToPeers);
+  
+    return () => {
+      filesMap.unobserveDeep(syncToPeers);
+    };
+  }, [socket, filesMap]);
 
-    reader.readAsText(file.file);
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleFileSelected = ({ fileName, language }) => {
+      setSelectedFile(fileName);
+      setLanguage(language);
+    };
+  
+    socket.on("file-selected", handleFileSelected);
+  
+    return () => {
+      socket.off("file-selected", handleFileSelected);
+    };
+  }, [socket]);
+  
+
+
+
+  const handleUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    const roomId = id; // Get room ID from params
+
+    const res = await uploadToCloudinary(files, roomId); // content upload (step 3)
+
+    for (const file of res.files) {
+      const path = file.path || file.name; // Use path if available, otherwise fallback to name
+      const metadata = {
+        filename: file.name,
+        fileId: file.cloudinaryPublicId,
+        cloudUrl: file.url,
+        path: file.path,
+        isFolder: false,
+        type: file.type,
+      };
+      foldersMap.set(path, metadata); // Yjs folder structure sync
+    }
+  }
+
+  const handleSelectFile = async (item) => {
+    if (!item || item.isFolder) return;
+
+    const ext = item.path.split(".").pop();
+    let lang = "plaintext";
+
+    switch (ext) {
+      case "js":
+        lang = "javascript";
+        break;
+      case "ts":
+        lang = "typescript";
+        break;
+      case "py":
+        lang = "python";
+        break;
+      case "html":
+        lang = "html";
+        break;
+      case "css":
+        lang = "css";
+        break;
+      case "json":
+        lang = "json";
+        break;
+      // add more if needed
+    }
+
+    // Load file content into Yjs if not already loaded
+    if (!filesMap.has(item.name)) {
+      try {
+        const res = await fetch(item.cloudUrl);
+        const content = await res.text();
+        // const yText = new Y.Text();
+        // yText.insert(0, content);
+        // filesMap.set(item.name, yText);
+        ydoc.transact(() => {
+          if (!filesMap.has(item.name)) {
+            const yText = new Y.Text();
+            yText.insert(0, content);
+            filesMap.set(item.name, yText);
+          }
+        });
+      } catch (err) {
+        console.error("Error loading file content:", err);
+        alert("Failed to load file");
+        return; // Don't continue if loading failed
+      }
+    }
+
+    socket.emit("file-selected", {
+      fileName: item.name,
+      language: lang,
+    });
+
+    // Only set file once it's safely loaded
+    setSelectedFile(item.name);
+    setLanguage(lang);
   };
+
+
 
   // Get users in room
   useEffect(() => {
@@ -175,9 +253,11 @@ const MainPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit("get-username", id, (name) => {
-      setUsername(name);
+    socket.emit("get-user", (user) => {
+      setUsername(user.username);
+      setUserId(user._id);
     });
+    
 
     const handleCodeUpdate = (data) => {
       setCode(data.newCode);
@@ -222,7 +302,7 @@ const MainPage = () => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
       // Only increment unread count if chat is not open and message is from another user
-      if (activeTab !== "chat" && newMessage.sender !== username) {
+      if (activeTab !== "chat" && newMessage.sender?._id !== userId) {
         setUnreadCount((prev) => prev + 1);
       }
     };
@@ -251,11 +331,9 @@ const MainPage = () => {
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
-
     // Update the content of the selected file if any
     if (selectedFile) {
       selectedFile.content = newCode;
-
       // Update the files array with the updated file
       setFiles((prevFiles) => {
         return prevFiles.map((file) =>
@@ -294,10 +372,11 @@ const MainPage = () => {
             setLanguage={setLanguage}
             activeTab={activeTab}
             handleTabClick={handleTabClick}
-            onFileUpload={handleFileUpload}
+            // onFileUpload={handleFileUpload}
             files={files}
             onSelectFile={handleSelectFile}
             roomId={id}
+            userId={userId}
             username={username}
             messages={messages}
             setMessages={setMessages}
@@ -305,6 +384,9 @@ const MainPage = () => {
             setUnreadCount={setUnreadCount}
             sendMessage={sendMessage}
             socket={socket}
+            ydoc={ydoc}
+            CodeEditor={CodeEditor}
+            onFileUpload={handleUpload}
           />
         </div>
 
@@ -313,18 +395,20 @@ const MainPage = () => {
           {/* Code Editor */}
           <div className="flex-1 bg-gray-900 overflow-hidden">
             <CodeEditor
+              ydoc={ydoc}
               editorRef={editorRef}
               language={language}
               setLanguage={setLanguage}
               code={code}
               setCode={setCode}
-              activeFile={selectedFile ? selectedFile.name : ""}
+              activeFile={selectedFile || ""}
               openFiles={openFiles}
               setOpenFiles={setOpenFiles}
               setSelectedFile={setSelectedFile}
               onCodeChange={handleCodeChange}
               username={username}
               socket={socket}
+              filesMap={filesMap}
             />
           </div>
         </div>

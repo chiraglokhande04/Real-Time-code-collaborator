@@ -17,6 +17,7 @@ const ChatSchema = new mongoose.Schema({
     }
   });
 
+
 const roomSchema = new mongoose.Schema({
     roomId:{
         type:String,
@@ -37,11 +38,9 @@ const roomSchema = new mongoose.Schema({
         ref:'User'
     }],
     chatHistory: [ChatSchema],
-    folder: {
-        name: String,
-        content: String,
-        type: String,
-        lastModified: Date
+    folderStructure: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'File',
     },
     createdAt: {
         type: Date,

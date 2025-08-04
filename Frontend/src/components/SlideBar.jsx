@@ -186,22 +186,28 @@ import Users from "./Users";
 import CodeTerminal from "./CodeTerminal";
 import { User } from "lucide-react";
 
+import FileTree from "./FileTree"; // Import the FileTree component
+
 const SlideBar = ({
   editorRef, language, setLanguage,
   users,
   activeTab,
   handleTabClick,
-  onFileUpload,
+  // onFileUpload,
   files,
   onSelectFile,
   roomId,
+  userId,
   username,
   messages,
   setMessages,
   unreadCount,
   setUnreadCount,
-  sendMessage,
-  socket
+  sendMessage, // New prop from parent
+  socket,
+  ydoc,
+  CodeEditor,
+  onFileUpload
 }) => {
   const [folderName, setFolderName] = useState(null);
   const [newFileName, setNewFileName] = useState("");
@@ -333,45 +339,20 @@ const SlideBar = ({
               <FileUploader
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
-                onUpload={onFileUpload}
-                disabled={!!folderName}
+                handleUpload={onFileUpload}
               />
+
             )}
 
-            <div className="flex mt-3 mb-2 gap-2">
-              <input
-                type="text"
-                placeholder="New file name"
-                className="text-white px-2 py-1 rounded w-50 ml-4"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-              />
-              <button
-                onClick={() => {
-                  if (!newFileName.trim()) return;
-                  const newFile = {
-                    name: newFileName,
-                    content: "",
-                    file: new File([""], newFileName, { type: "text/plain" }),
-                  };
-                  onFileUpload([newFile.file]);
-                  setNewFileName("");
-                }}
-                className="bg-blue-500 px-2 py-1 rounded text-sm"
-              >
-                + Add
-              </button>
-            </div>
-
-            <div className="max-h-64 overflow-y-auto border border-gray-600 rounded p-2 mt-2">
-              {renderFileTree(files, onSelectFile)}
-            </div>
+            <FileTree ydoc ={ydoc} CodeEditor = {CodeEditor} onFileClick = {onSelectFile}/>
+           
           </div>
         )}
 
         {activeTab === "chat" && (
           <ChatBox
             username={username}
+            userId={userId}
             roomId={roomId}
             messages={messages}
             setMessages={setMessages}

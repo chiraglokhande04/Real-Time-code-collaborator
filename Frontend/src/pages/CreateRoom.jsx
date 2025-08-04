@@ -1,96 +1,37 @@
-// import React, { useState, useEffect } from "react";
-// import { useSocket } from "../context/socketContext";
-// import { useNavigate } from "react-router-dom";
-// import toast, { Toaster } from "react-hot-toast";
-
-// const CreateRoom = () => {
-//   const [roomId, setRoomId] = useState("");
-//   const [username, setUsername] = useState("");
-//   const socket = useSocket(); // ✅ Use the global socket reference
-//   const navigate = useNavigate();
-
-//   const createRoom = () => {
-//     if (!socket) {
-//       toast.error("⚠️ Socket not connected!");
-//       return;
-//     }
-
-//     socket.emit("create-room",username);
-
-//     // ✅ Listen for room-created event (only once)
-//     socket.once("room-created", (roomId) => {
-//       console.log("✅ Received roomId:", roomId);
-//       setRoomId(roomId);
-//       toast.success("🎉 Room Created!");
-//     });
-//   };
-
-//   useEffect(() => {
-//     if (roomId !== "") {
-//       navigate(`/room/${roomId}`);
-//     }
-//   }, [roomId]);
-
-//   return (
-//     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
-//       <Toaster />
-//       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 h-90 text-center">
-//         <h2 className="text-2xl font-semibold my-4 mt-5">
-//           Create or Join a Room
-//         </h2>
-
-//         <input
-//           type="text"
-//           placeholder="Enter Username"
-//           className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-//           value={username}
-//           onChange={(e) => setUsername(e.target.value)}
-//         />
-
-
-//         <div className="flex justify-between mt-8">
-//           <button
-//             onClick={createRoom}
-//             className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg"
-//           >
-//             Create Room
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CreateRoom;
-
-
-
 
 import React, { useState, useEffect } from "react";
 import { Code, Users, ArrowRight, Sparkles, Terminal, Coffee, Code2 } from "lucide-react";
 import { useSocket } from "../context/socketContext";
-import { useNavigate,Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
 const CreateRoom = () => {
   const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useState("");
+  const [roomName, setRoomName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const socket = useSocket(); // ✅ Use the global socket reference
   const navigate = useNavigate();
 
   const createRoom = () => {
+    console.log("🟢 Creating room with name:", roomName);
     if (!socket) {
       toast.error("⚠️ Socket not connected!");
+      console.log("❌ Socket not connected");
       return;
     }
 
-    socket.emit("create-room",username);
+    socket.emit("create-room", roomName);
+    console.log("🟢 Emitted create-room event with roomName:", roomName);
 
     // ✅ Listen for room-created event (only once)
-    socket.once("room-created", (roomId) => {
+    socket.once("room-created", ({ roomId,roomName, folder, members }) => {
       console.log("✅ Received roomId:", roomId);
       setRoomId(roomId);
+    
+      // Optional: Store folder content or members if needed
+      // setFolder(folder);
+      // setMembers(members);
+    
       toast.success("🎉 Room Created!");
     });
   };
@@ -135,7 +76,7 @@ const CreateRoom = () => {
           </div>
 
           {/* Username Input */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Username
             </label>
@@ -149,21 +90,23 @@ const CreateRoom = () => {
               />
               <Terminal className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
-          </div>
-
-          {/* Room ID Input */}
-          {/* <div className="mb-8">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Room ID <span className="text-slate-500">(optional - for joining)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter room ID to join"
-              className="w-full p-4 rounded-xl bg-slate-700/50 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-slate-400 transition-all duration-200"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-            />
           </div> */}
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Enter Room Name
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Enter your Room Name"
+                className="w-full p-4 rounded-xl bg-slate-700/50 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-white placeholder-slate-400 transition-all duration-200"
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+              />
+              <Terminal className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="space-y-4">
@@ -199,30 +142,6 @@ const CreateRoom = () => {
               </div>
             </Link>
           </div>
-
-          {/* Features */}
-          {/* <div className="mt-8 pt-6 border-t border-slate-700/50">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="group">
-                <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Code className="w-5 h-5 text-cyan-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Live Coding</p>
-              </div>
-              <div className="group">
-                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Users className="w-5 h-5 text-purple-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Multi-User</p>
-              </div>
-              <div className="group">
-                <div className="bg-gradient-to-br from-pink-500/20 to-pink-600/20 p-3 rounded-xl mb-2 group-hover:scale-110 transition-transform">
-                  <Coffee className="w-5 h-5 text-pink-400 mx-auto" />
-                </div>
-                <p className="text-xs text-slate-400">Instant Sync</p>
-              </div>
-            </div>
-          </div> */}
         </div>
 
         {/* Footer */}
