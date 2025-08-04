@@ -2,24 +2,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPaperPlane } from "react-icons/fa";
 
-const ChatBox = ({ 
-  roomId, 
-  username, 
-  messages, 
-  setMessages, 
-  setUnreadCount, 
+const ChatBox = ({
+  roomId,
+  userId,
+  username,
+  messages,
+  setMessages,
+  setUnreadCount,
   isOpen,
   sendMessage // Receive the sendMessage function from props
 }) => {
   const [messageText, setMessageText] = useState("");
   const [users, setUsers] = useState([]);
   const messagesEndRef = useRef(null);
-  
+
   // Get users list from parent component via socket
   useEffect(() => {
     // This would be handled in the MainPage component now
   }, []);
-  
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -29,14 +30,14 @@ const ChatBox = ({
 
   const handleSendMessage = () => {
     if (messageText.trim() === "") return;
-    
+
     // Call the sendMessage function passed down from parent
     sendMessage(messageText);
-    
+
     // Clear the input field
     setMessageText("");
   };
-  
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();
@@ -53,12 +54,16 @@ const ChatBox = ({
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`mb-2 p-2 rounded ${msg.sender === username ? "bg-blue-500 text-white text-right" : "bg-gray-700 text-left"}`}
+            className={`mb-2 p-2 rounded ${msg.sender?._id === userId
+                ? "bg-blue-500 text-white text-right"
+                : "bg-gray-700 text-left"
+              }`}
           >
-            <span className="font-bold">{msg.sender}: </span>
+            <span className="font-bold">{msg.sender?.username || "Unknown"}: </span>
             <span>{msg.message}</span>
           </div>
         ))}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -71,8 +76,8 @@ const ChatBox = ({
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
         />
-        <button 
-          className="mr-2 p-2 bg-blue-500 rounded" 
+        <button
+          className="mr-2 p-2 bg-blue-500 rounded"
           onClick={handleSendMessage}
         >
           <FaPaperPlane />

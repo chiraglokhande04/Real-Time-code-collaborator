@@ -20,6 +20,7 @@ const MainPage = () => {
   const [openFiles, setOpenFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const [code, setCode] = useState("// Write your code here...");
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -41,9 +42,15 @@ const MainPage = () => {
     setActiveTab(activeTab === tab ? null : tab);
 
     // Reset unread count when opening chat tab
+    if (socket && username) {
+      const isChatNowOpen = tab === "chat";
+      socket.emit("chat-open-status", { roomId: id, chatOpen: isChatNowOpen });
+    }
+    
     if (tab === "chat") {
       setUnreadCount(0);
     }
+    
   };
 
   useEffect(() => {
@@ -113,6 +120,23 @@ const MainPage = () => {
       filesMap.unobserveDeep(syncToPeers);
     };
   }, [socket, filesMap]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleFileSelected = ({ fileName, language }) => {
+      setSelectedFile(fileName);
+      setLanguage(language);
+    };
+  
+    socket.on("file-selected", handleFileSelected);
+  
+    return () => {
+      socket.off("file-selected", handleFileSelected);
+    };
+  }, [socket]);
+  
 
 
 
@@ -186,6 +210,11 @@ const MainPage = () => {
       }
     }
 
+    socket.emit("file-selected", {
+      fileName: item.name,
+      language: lang,
+    });
+
     // Only set file once it's safely loaded
     setSelectedFile(item.name);
     setLanguage(lang);
@@ -224,9 +253,11 @@ const MainPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit("get-username", id, (name) => {
-      setUsername(name);
+    socket.emit("get-user", (user) => {
+      setUsername(user.username);
+      setUserId(user._id);
     });
+    
 
     const handleCodeUpdate = (data) => {
       setCode(data.newCode);
@@ -271,7 +302,7 @@ const MainPage = () => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
       // Only increment unread count if chat is not open and message is from another user
-      if (activeTab !== "chat" && newMessage.sender !== username) {
+      if (activeTab !== "chat" && newMessage.sender?._id !== userId) {
         setUnreadCount((prev) => prev + 1);
       }
     };
@@ -345,6 +376,7 @@ const MainPage = () => {
             files={files}
             onSelectFile={handleSelectFile}
             roomId={id}
+            userId={userId}
             username={username}
             messages={messages}
             setMessages={setMessages}

@@ -21,6 +21,7 @@ const SlideBar = ({
   files,
   onSelectFile,
   roomId,
+  userId,
   username,
   messages,
   setMessages,
@@ -144,6 +145,7 @@ const SlideBar = ({
         {activeTab === "chat" && (
           <ChatBox
             username={username}
+            userId={userId}
             roomId={roomId}
             messages={messages}
             setMessages={setMessages}
