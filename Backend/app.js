@@ -14,7 +14,7 @@ app.use(cookieParser());
 
 const cors = require("cors");
 app.use(cors({
-  origin: 'http://localhost:5173', // Change this to your frontend URL
+origin: ['http://localhost:5173','https://real-time-code-collaborator-one.vercel.app'], // Change this to your frontend URL
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 }));
 
