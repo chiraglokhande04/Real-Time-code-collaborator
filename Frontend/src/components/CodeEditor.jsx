@@ -1,177 +1,3 @@
-
-
-// import React, { useState, useRef, useEffect } from "react";
-// import MonacoEditor from "@monaco-editor/react";
-
-// const CodeEditor = ({
-//   code,
-//   activeFile,
-//   onCodeChange,
-//   username,
-//   socket,
-//   editorRef,
-//   language,
-//   setLanguage,
-// }) => {
-//   const [fontSize, setFontSize] = useState(14);
-//   const monacoRef = useRef(null);
-//   const widgetsRef = useRef({});
-
-//   const getLanguage = (filename) => {
-//     if (!filename) return "javascript";
-//     const ext = filename.split(".").pop().toLowerCase();
-//     const languageMap = {
-//       js: "javascript",
-//       jsx: "javascript",
-//       ts: "typescript",
-//       tsx: "typescript",
-//       py: "python",
-//       cpp: "cpp",
-//       c: "cpp",
-//       h: "cpp",
-//       hpp: "cpp",
-//       java: "java",
-//       html: "html",
-//       css: "css",
-//       json: "json",
-//       md: "markdown",
-//       php: "php",
-//       rb: "ruby",
-//       go: "go",
-//       rs: "rust",
-//       cs: "csharp",
-//       sql: "sql",
-//     };
-//     return languageMap[ext] || "plaintext";
-//   };
-
-//   useEffect(() => {
-//     const detectedLanguage = getLanguage(activeFile);
-//     setLanguage(detectedLanguage);
-//     if (editorRef.current && monacoRef.current) {
-//       monacoRef.current.editor.setModelLanguage(
-//         editorRef.current.getModel(),
-//         detectedLanguage
-//       );
-//     }
-//   }, [activeFile]);
-
-//   const createUsernameWidget = (editor, monaco, user, position) => {
-//     if (!editor || !monaco || !position) return;
-
-//     if (widgetsRef.current[user]) {
-//       editor.removeContentWidget(widgetsRef.current[user]);
-//     }
-
-//     const domNode = document.createElement("div");
-//     domNode.innerText = `👤 ${user}`;
-//     domNode.className = "username-widget";
-
-//     const widget = {
-//       getId: () => `username.widget.${user}`,
-//       getDomNode: () => domNode,
-//       getPosition: () => ({
-//         position,
-//         preference: [monaco.editor.ContentWidgetPositionPreference.ABOVE],
-//       }),
-//     };
-
-//     widgetsRef.current[user] = widget;
-//     editor.addContentWidget(widget);
-//   };
-
-//   const handleEditorDidMount = (editor, monaco) => {
-//     editorRef.current = editor;
-//     monacoRef.current = monaco;
-
-//     if (socket) {
-//       editor.onDidChangeCursorPosition((event) => {
-//         const position = event.position;
-//         if (socket) {
-//           socket.emit("cursor-move", { username, position });
-//         }
-//       });
-//     }
-
-//     window.addEventListener("resize", () => {
-//       if (editor) editor.layout();
-//     });
-//   };
-
-//   useEffect(() => {
-//     if (editorRef.current) {
-//       setTimeout(() => {
-//         editorRef.current.layout();
-//       }, 50);
-//     }
-//   }, [code]);
-
-//   useEffect(() => {
-//     if (!socket) return;
-
-//     const handleUpdateCursor = ({ username, position }) => {
-//       if (editorRef.current && monacoRef.current) {
-//         createUsernameWidget(
-//           editorRef.current,
-//           monacoRef.current,
-//           username,
-//           position
-//         );
-//       }
-//     };
-
-//     socket.on("update-cursor", handleUpdateCursor);
-
-//     return () => {
-//       socket.off("update-cursor", handleUpdateCursor);
-//     };
-//   }, [socket, username]);
-
-//   return (
-//     <div className="h-full flex flex-col">
-//       <div className="flex flex-wrap items-center bg-gray-800 text-white p-2 gap-2">
-//         <div className="flex items-center mr-2 min-w-fit">
-//           <span className="text-sm whitespace-nowrap mr-1">Font:</span>
-//           <input
-//             type="range"
-//             min="12"
-//             max="24"
-//             value={fontSize}
-//             onChange={(e) => setFontSize(Number(e.target.value))}
-//             className="w-20"
-//           />
-//           <span className="text-xs ml-1">{fontSize}</span>
-//         </div>
-//         <div className="flex-grow text-center overflow-hidden text-ellipsis whitespace-nowrap px-2 min-w-0">
-//           {activeFile ? `${activeFile} (${language})` : "No file selected"}
-//         </div>
-//       </div>
-
-//       <div className="flex flex-col h-full">
-//         <MonacoEditor
-//           height="100%"
-//           theme="vs-dark"
-//           language={language}
-//           value={code}
-//           onChange={(value) => onCodeChange(value)}
-//           onMount={handleEditorDidMount}
-//           options={{
-//             fontSize: fontSize,
-//             automaticLayout: true,
-//             minimap: { enabled: true, maxColumn: 60 },
-//             wordWrap: "on",
-//             scrollBeyondLastLine: false,
-//           }}
-//         />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CodeEditor;
-
-
-
 import React, { useEffect, useState, useRef } from "react";
 import MonacoEditor from "@monaco-editor/react";
 
@@ -190,13 +16,11 @@ const CodeEditor = ({
   const widgetsRef = useRef({});
   const yTextRef = useRef(null);
 
-
   const getLanguage = (filename) => {
     if (!filename) return "javascript";
     const ext = filename.split(".").pop().toLowerCase();
     const map = {
-      js: "javascript", jsx: "javascript",
-      ts: "typescript", tsx: "typescript",
+      js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript",
       py: "python", cpp: "cpp", c: "cpp", h: "cpp", hpp: "cpp",
       java: "java", html: "html", css: "css", json: "json",
       md: "markdown", php: "php", rb: "ruby", go: "go",
@@ -207,12 +31,14 @@ const CodeEditor = ({
 
   // --- Sync local value with Y.Text ---
   useEffect(() => {
-    if (!activeFile || !filesMap) return;
+    if (!activeFile || !filesMap) {
+      yTextRef.current = null;
+      setValue("");
+      return;
+    }
 
     const yText = filesMap.get(activeFile);
-
     if (!yText) {
-      console.warn("No Y.Text found for", activeFile);
       yTextRef.current = null;
       setValue("");
       return;
@@ -221,16 +47,12 @@ const CodeEditor = ({
     yTextRef.current = yText;
     setValue(yText.toString());
 
-    const updateFromYText = () => {
-      const newText = yText.toString();
-      setValue(newText);
-    };
-
+    const updateFromYText = () => setValue(yText.toString());
     yText.observe(updateFromYText);
     return () => yText.unobserve(updateFromYText);
-  }, [activeFile]);
+  }, [activeFile, filesMap]);
 
-  // --- Update Monaco language based on file type ---
+  // --- Detect language ---
   useEffect(() => {
     const detectedLang = getLanguage(activeFile);
     setLanguage(detectedLang);
@@ -241,11 +63,10 @@ const CodeEditor = ({
     }
   }, [activeFile]);
 
-  // --- Handle local edits and sync to Yjs ---
+  // --- Sync edits to Yjs ---
   const handleEditorChange = (value) => {
     setValue(value);
     const yText = yTextRef.current;
-
     if (yText && value !== yText.toString()) {
       yText.doc?.transact(() => {
         yText.delete(0, yText.length);
@@ -270,7 +91,7 @@ const CodeEditor = ({
     window.addEventListener("resize", () => editor.layout());
   };
 
-  // --- Cursor widget (collab presence) ---
+  // --- Cursor widget ---
   useEffect(() => {
     if (!socket) return;
 
@@ -305,46 +126,52 @@ const CodeEditor = ({
     return () => socket.off("update-cursor", handleUpdateCursor);
   }, [socket, username]);
 
+  // --- Final fallback value if nothing is selected or created ---
+  const editorValue =
+    yTextRef.current && value.trim() !== ""
+      ? value
+      : `console.log("hello world");`;
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-wrap items-center bg-gray-800 text-white p-2 gap-2">
-        <div className="flex items-center mr-2 min-w-fit">
-          <span className="text-sm whitespace-nowrap mr-1">Font:</span>
+    <div className="h-full w-full flex flex-col bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] text-white shadow-sm border-b border-gray-700">
+        <div className="flex items-center gap-3">
+          <label htmlFor="fontSize" className="text-sm font-medium">
+            Font Size
+          </label>
           <input
+            id="fontSize"
             type="range"
             min="12"
             max="24"
             value={fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
-            className="w-20"
+            className="accent-green-400"
           />
-          <span className="text-xs ml-1">{fontSize}</span>
+          <span className="text-sm w-6 text-center">{fontSize}</span>
         </div>
-        <div className="flex-grow text-center overflow-hidden text-ellipsis whitespace-nowrap px-2 min-w-0">
+
+        <div className="text-sm font-mono truncate text-gray-300">
           {activeFile ? `${activeFile} (${language})` : "No file selected"}
         </div>
       </div>
 
-      <div className="flex flex-col h-full">
-        {yTextRef.current ? (
-          <MonacoEditor
-            height="100%"
-            theme="vs-dark"
-            language={language}
-            value={value}
-            onChange={(val) => handleEditorChange(val)}
-            onMount={handleEditorDidMount}
-            options={{
-              fontSize: fontSize,
-              automaticLayout: true,
-              minimap: { enabled: true },
-              wordWrap: "on",
-              scrollBeyondLastLine: false,
-            }}
-          />
-        ) : (
-          <div className="p-4 text-white">No file selected or file is not yet created.</div>
-        )}
+      <div className="flex-grow">
+        <MonacoEditor
+          height="100%"
+          theme="vs-dark"
+          language={language || "javascript"}
+          value={editorValue}
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          options={{
+            fontSize,
+            automaticLayout: true,
+            minimap: { enabled: true },
+            wordWrap: "on",
+            scrollBeyondLastLine: false,
+          }}
+        />
       </div>
     </div>
   );

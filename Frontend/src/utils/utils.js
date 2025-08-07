@@ -1,17 +1,5 @@
 import axios from "axios";
-
-
-// export async function uploadToCloudinary(file,roomId) {
-//     const content = await file.text(); // or Blob to string
-//     const res = await axios.post("http://localhost:3000/api/files/upload", {
-//       filename: file.name,
-//       content,
-//       roomId
-//     });
-//     return res.data;
-//   }
-
-
+const apiUrl = import.meta.env.VITE_API_URL;
 
 
 export async function uploadToCloudinary(files, roomId) {
@@ -30,7 +18,7 @@ export async function uploadToCloudinary(files, roomId) {
   
 
   try {
-    const response = await axios.post("http://localhost:3000/api/files/upload", formData, {
+    const response = await axios.post(`${apiUrl}/api/files/upload`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

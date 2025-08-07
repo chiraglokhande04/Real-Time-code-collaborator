@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { FiChevronRight, FiChevronDown } from "react-icons/fi"; // Chevron icons
 
 function buildTreeFromMap(foldersObj) {
   const tree = {};
@@ -16,8 +17,8 @@ function buildTreeFromMap(foldersObj) {
           path: parts.slice(0, index + 1).join("/"),
           isFolder: !isFile,
           children: {},
-          cloudUrl : value.cloudUrl || null,
-          fileId : value.fileId || null,
+          cloudUrl: value.cloudUrl || null,
+          fileId: value.fileId || null,
         };
       }
 
@@ -28,7 +29,6 @@ function buildTreeFromMap(foldersObj) {
   return tree;
 }
 
-
 function FolderTree({ tree, onFileClick }) {
   const [expanded, setExpanded] = useState({});
 
@@ -36,66 +36,82 @@ function FolderTree({ tree, onFileClick }) {
     setExpanded((prev) => ({ ...prev, [path]: !prev[path] }));
   };
 
-  const renderTree = (node) => {
-    return Object.values(node).map((item) => (
-      <div key={item.path} style={{ marginLeft: 20 }}>
-        <span
-          style={{ cursor: item.isFolder ? "pointer" : "default", userSelect: "none" }}
-          onClick={() => {
-            if (item.isFolder) toggleFolder(item.path);
-            else { console.log("File clicked:", item);
-              onFileClick(item)};
-          }}
-        >
-          {item.isFolder ? (expanded[item.path] ? "📂" : "📁") : "📄"} {item.name}
-        </span>
-        {item.isFolder && expanded[item.path] && renderTree(item.children)}
-      </div>
-    ));
+  const renderTree = (node, level = 0) => {
+    return Object.values(node).map((item) => {
+      const isOpen = expanded[item.path];
+
+      return (
+        <div key={item.path}>
+          <div
+            className={`group flex items-center px-2 py-1.5 cursor-pointer text-sm select-none hover:bg-[#2c2c2c] transition`}
+            style={{
+              paddingLeft: `${level * 16 + 8}px`,
+              color: item.isFolder ? "#cccccc" : "#eeeeee",
+              fontWeight: item.isFolder ? 500 : 400,
+              borderBottom: "1px solid #1f1f1f",
+              fontFamily: "Consolas, 'Courier New', monospace",
+            }}
+            onClick={() => {
+              if (item.isFolder) {
+                toggleFolder(item.path);
+              } else {
+                onFileClick(item);
+              }
+            }}
+          >
+            {item.isFolder ? (
+              isOpen ? (
+                <FiChevronDown className="mr-1 text-gray-400" size={14} />
+              ) : (
+                <FiChevronRight className="mr-1 text-gray-400" size={14} />
+              )
+            ) : (
+              <span className="w-[14px] mr-1" />
+            )}
+            <span className="truncate">{item.name}</span>
+          </div>
+          {item.isFolder && isOpen && renderTree(item.children, level + 1)}
+        </div>
+      );
+    });
   };
 
   return <div>{renderTree(tree)}</div>;
 }
 
-
-export default function FileTree({ ydoc,onFileClick }) {
+export default function FileTree({ ydoc, onFileClick }) {
   const foldersMap = ydoc.getMap("folders");
-
   const [tree, setTree] = useState({});
 
   useEffect(() => {
     if (!foldersMap) return;
-  
+
     const updateTree = () => {
       const obj = {};
-    
-
       foldersMap.forEach((value, key) => {
         obj[key] = value;
       });
+
       const treeData = buildTreeFromMap(obj);
       setTree(treeData);
-
     };
-  
+
     updateTree();
-  
-    foldersMap.observeDeep(updateTree); // use observeDeep for nested changes
-  
+
+    foldersMap.observeDeep(updateTree);
     return () => {
       foldersMap.unobserveDeep(updateTree);
     };
   }, [foldersMap]);
-  
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-    
-        {/* <h3>📁 Folder Structure</h3> */}
+    <div className="bg-[#1e1e1e] text-white h-screen overflow-y-auto border-r border-[#2a2a2a]">
+      <div className="px-3 py-2 text-xs text-gray-400 font-semibold border-b border-[#2a2a2a]">
+        EXPLORER
+      </div>
+      <div className="pb-2">
         <FolderTree tree={tree} onFileClick={onFileClick} />
       </div>
-
-   
+    </div>
   );
 }
-

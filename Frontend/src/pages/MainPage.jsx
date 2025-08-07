@@ -28,6 +28,7 @@ const MainPage = () => {
   const [slideBarWidth, setSlideBarWidth] = useState(0); // Track slidebar width
   const editorRef = useRef(null);
   const [language, setLanguage] = useState("javascript");
+  const [isUploading, setIsUploading] = useState(false);
   //const [fileContentsMap, setFileContentsMap] = useState(new Map());
 
   const socket = useSocket();
@@ -141,6 +142,9 @@ const MainPage = () => {
 
 
   const handleUpload = async (e) => {
+    setIsUploading(true);
+
+    
     const files = Array.from(e.target.files);
     const roomId = id; // Get room ID from params
 
@@ -158,6 +162,8 @@ const MainPage = () => {
       };
       foldersMap.set(path, metadata); // Yjs folder structure sync
     }
+
+    setIsUploading(false);
   }
 
   const handleSelectFile = async (item) => {
@@ -387,6 +393,7 @@ const MainPage = () => {
             ydoc={ydoc}
             CodeEditor={CodeEditor}
             onFileUpload={handleUpload}
+            isUploading = {isUploading}
           />
         </div>
 

@@ -257,19 +257,20 @@ const setupSocket = (server) => {
         const sender = socket.user._id;
         const username = socket.user.displayName || "Unknown";
     
-        // Create chat message document
-        const chatMessage = new Chat({
-          roomId,
-          sender,
-          message,
-          timestamp: new Date(),
-        });
-        await chatMessage.save();
+        const timestamp = new Date();
     
-        // Push message to room's chatHistory
+        // Push message directly into Room.chatHistory (not separate Chat model)
         await Room.findOneAndUpdate(
           { roomId },
-          { $push: { chatHistory: chatMessage._id } }
+          {
+            $push: {
+              chatHistory: {
+                message,
+                sender,
+                timestamp
+              }
+            }
+          }
         );
     
         // Emit to all users in the room
@@ -279,21 +280,17 @@ const setupSocket = (server) => {
             username: username,
           },
           message,
-          timestamp: chatMessage.timestamp,
+          timestamp,
         };
     
         io.to(roomId).emit("newMessage", newMessage);
-    
-        // Optional notification logic (expand as per your UI)
-        // This logic assumes you maintain state somewhere to check if chat is open
-        // For now, we'll skip it or leave it as a placeholder:
-        // socket.to(roomId).emit("notification", { sender: username, message });
     
         console.log(`💬 Message Sent in ${roomId}: ${username} -> ${message}`);
       } catch (error) {
         console.error("❌ Error sending message:", error);
       }
     });
+    
     
   
 
