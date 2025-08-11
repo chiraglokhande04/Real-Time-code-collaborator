@@ -290,6 +290,40 @@ const setupSocket = (server) => {
         console.error("❌ Error sending message:", error);
       }
     });
+
+    socket.on("disconnect", async () => {
+      console.log(`🔴 Socket Disconnected: ${socket.id}`);
+
+      const roomId = socket.roomId;
+      if (!roomId || !socket.user) {
+        return;
+      }
+
+      try {
+        // Remove user from the room's members list in DB
+        await Room.findOneAndUpdate(
+          { roomId },
+          { $pull: { members: socket.user._id } }
+        );
+
+        // Fetch updated room with members populated
+        const updatedRoom = await Room.findOne({ roomId }).populate('members', '_id displayName');
+
+        if (updatedRoom) {
+          const updatedUsers = updatedRoom.members.map(member => ({
+            _id: member._id,
+            username: member.displayName || "Guest",
+          }));
+
+          // Emit updated user list to the room
+          io.to(roomId).emit("update-users", updatedUsers);
+
+          console.log(`👥 Updated users in room ${roomId} after disconnect:`, updatedUsers);
+        }
+      } catch (err) {
+        console.error("❌ Error handling disconnect:", err);
+      }
+    });
     
     
   

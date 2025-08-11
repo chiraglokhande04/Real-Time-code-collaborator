@@ -13,12 +13,16 @@ const JoinRoom = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleRoomJoined = (roomId) => {
-      console.log("✅ Received roomId:", roomId);
-      socket.emit('request-yjs-sync');
-      toast.success("🎉 Room Joined!");
-      navigate(`/room/${roomId}`);
-    };
+   const handleRoomJoined = (roomId) => {
+  toast.success("🎉 Room Joined!");
+  navigate(`/room/${roomId}`);
+
+  // Delay request to next tick or after navigation
+  setTimeout(() => {
+    socket.emit('request-yjs-sync');
+  }, 1000);
+};
+
 
     socket.on("room-joined", handleRoomJoined);
     return () => {

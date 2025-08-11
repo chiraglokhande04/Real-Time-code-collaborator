@@ -130,7 +130,7 @@ const CodeEditor = ({
   const editorValue =
     yTextRef.current && value.trim() !== ""
       ? value
-      : `console.log("hello world");`;
+      : ``;
 
   return (
     <div className="h-full w-full flex flex-col bg-[#1e1e1e]">

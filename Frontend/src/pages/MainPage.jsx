@@ -7,6 +7,8 @@ import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
 import { uploadToCloudinary } from "../utils/utils";
 
+  import pLimit from "p-limit";
+
 import * as Y from "yjs";
 
 const ydoc = new Y.Doc();
@@ -53,6 +55,20 @@ const MainPage = () => {
     }
     
   };
+
+
+//   useEffect(() => {
+//   if (!socket) return;
+
+//   // Join room on mount
+//   socket.emit("join-room", id);
+
+//   // Request full Yjs document state after joining
+//   socket.emit("request-yjs-sync");
+
+//   // Your existing handlers for yjs-updated, yjs-sync, etc.
+
+// }, [socket, id]);
 
   useEffect(() => {
     if (!foldersMap) return;
@@ -141,30 +157,108 @@ const MainPage = () => {
 
 
 
-  const handleUpload = async (e) => {
-    setIsUploading(true);
+  // const handleUpload = async (e) => {
+  //   setIsUploading(true);
 
     
-    const files = Array.from(e.target.files);
-    const roomId = id; // Get room ID from params
+  //   const files = Array.from(e.target.files);
+  //   const roomId = id; // Get room ID from params
 
-    const res = await uploadToCloudinary(files, roomId); // content upload (step 3)
+  //   const res = await uploadToCloudinary(files, roomId); // content upload (step 3)
 
-    for (const file of res.files) {
-      const path = file.path || file.name; // Use path if available, otherwise fallback to name
-      const metadata = {
+  //   for (const file of res.files) {
+  //     const path = file.path || file.name; // Use path if available, otherwise fallback to name
+  //     const metadata = {
+  //       filename: file.name,
+  //       fileId: file.cloudinaryPublicId,
+  //       cloudUrl: file.url,
+  //       path: file.path,
+  //       isFolder: false,
+  //       type: file.type,
+  //     };
+  //     foldersMap.set(path, metadata); // Yjs folder structure sync
+  //   }
+
+  //   setIsUploading(false);
+  // }
+
+
+const limit = pLimit(5); // max 5 parallel uploads
+
+const handleUpload = async (e) => {
+  setIsUploading(true);
+
+  const files = Array.from(e.target.files);
+  const roomId = id; // get room ID from params or context
+
+  // 1️⃣ Extract folder tree metadata from files first
+  const foldersMapUpdate = new Map();
+
+  files.forEach((file) => {
+    const path = file.webkitRelativePath || file.name;
+    const pathParts = path.split("/");
+    // Mark all parent folders as isFolder: true
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const folderPath = pathParts.slice(0, i + 1).join("/");
+      if (!foldersMapUpdate.has(folderPath)) {
+        foldersMapUpdate.set(folderPath, {
+          filename: pathParts[i],
+          fileId: null,
+          cloudUrl: null,
+          path: folderPath,
+          isFolder: true,
+          type: "folder",
+        });
+      }
+    }
+  });
+
+  // 2️⃣ Update Yjs folder map with folders (no content yet)
+  foldersMapUpdate.forEach((metadata, path) => {
+    if (!foldersMap.has(path)) {
+      foldersMap.set(path, metadata);
+    }
+  });
+
+  // Also add all files as file entries with empty metadata, real content will come later
+  files.forEach((file) => {
+    const path = file.webkitRelativePath || file.name;
+    if (!foldersMap.has(path)) {
+      foldersMap.set(path, {
         filename: file.name,
-        fileId: file.cloudinaryPublicId,
-        cloudUrl: file.url,
-        path: file.path,
+        fileId: null,
+        cloudUrl: null,
+        path,
         isFolder: false,
         type: file.type,
-      };
-      foldersMap.set(path, metadata); // Yjs folder structure sync
+      });
     }
+  });
 
-    setIsUploading(false);
-  }
+  // 3️⃣ Start background upload, but don’t block UI
+  (async () => {
+    try {
+      const res = await uploadToCloudinary(files, roomId);
+
+      // 4️⃣ Update Yjs with real file metadata from server response
+      for (const file of res.files) {
+        const path = file.path || file.name;
+        foldersMap.set(path, {
+          filename: file.name,
+          fileId: file.cloudinaryPublicId,
+          cloudUrl: file.url,
+          path: file.path,
+          isFolder: false,
+          type: file.type,
+        });
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  })();
+};
 
   const handleSelectFile = async (item) => {
     if (!item || item.isFolder) return;

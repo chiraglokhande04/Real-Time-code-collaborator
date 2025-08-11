@@ -1,6 +1,11 @@
 const File = require("../models/File");
 const cloudinary = require("../config/upload");
 const Room = require("../models/Room");
+let pLimit;
+(async () => {
+  pLimit = (await import('p-limit')).default;
+  // Your logic using pLimit here
+})();
 
 
 // exports.uploadFile = async (req, res) => {
@@ -9,37 +14,31 @@ const Room = require("../models/Room");
 //     const { roomId } = req.body;
 //     const paths = JSON.parse(req.body.paths || "[]"); // 👈 parse it
 
-
 //     if (!files || files.length === 0) {
 //       return res.status(400).json({ message: "No files received" });
 //     }
 
-//     const folderMap = {}; // folderPath => folderDoc._id
+//     if (files.length !== paths.length) {
+//       return res.status(400).json({ message: "Files and paths count mismatch" });
+//     }
 
-//     uplodedFiles =[]
-
+//     const folderMap = {};
 //     const room = await Room.findOne({ roomId });
 //     if (!room) return res.status(404).json({ message: "Room not found" });
 
-//     console.log("files", files);
-//     console.log("-------------------------")
+//     const uploadedFiles = [];
 
-//     for (const file of files) {
-//       // Skip empty files (Cloudinary rejects them)
+//     for (let i = 0; i < files.length; i++) {
+//       const file = files[i];
 
-//       console.log("Processing file:", file);
 //       if (!file.buffer || file.buffer.length === 0) {
 //         console.warn(`Skipping empty file: ${file.originalname}`);
 //         continue;
 //       }
+//       const fullPath = paths[i]; // 👈 matched from frontend
 
-//       const relativePath = file.originalname;
-//       const webkitPath = file.webkitRelativePath || relativePath;
-//       // console.log("webkitPath", webkitPath);
-//       const fullPath = webkitPath || file.originalname;
-
-//       const pathParts = fullPath.split("/"); // e.g., ['MyProject', 'src', 'main.js']
-//       const fileName = pathParts.pop(); // e.g., 'main.js'
+//       const pathParts = fullPath.split("/");
+//       const fileName = pathParts.pop();
 
 //       let currentParentId = null;
 //       let currentPath = "";
@@ -66,7 +65,7 @@ const Room = require("../models/Room");
 //         }
 //       }
 
-//       // Upload file to Cloudinary
+//       // Upload to Cloudinary
 //       const uploadResult = await new Promise((resolve, reject) => {
 //         const stream = cloudinary.uploader.upload_stream(
 //           { resource_type: "auto" },
@@ -78,11 +77,6 @@ const Room = require("../models/Room");
 //         stream.end(file.buffer);
 //       });
 
-//       // console.log("uploadResult", uploadResult);
-//       // console.log("fullPath", fullPath);
-//       // console.log("----------------------------")
-
-//       // Save file metadata in DB
 //       const uploadedFile = await File.create({
 //         name: fileName,
 //         type: "file",
@@ -93,13 +87,11 @@ const Room = require("../models/Room");
 //         url: uploadResult.secure_url,
 //       });
 
+//       uploadedFiles.push(uploadedFile);
 //       global._io.to(roomId).emit("fileUploaded", uploadedFile);
-//       uplodedFiles.push(uploadedFile);
-
 //     }
 
-
-//     res.status(200).json({ message: "Uploaded successfully", files: uplodedFiles });
+//     res.status(200).json({ message: "Uploaded successfully", files: uploadedFiles });
 //   } catch (error) {
 //     console.error("❌ Upload failed:", error);
 //     res.status(500).json({ message: "Upload failed" });
@@ -107,42 +99,11 @@ const Room = require("../models/Room");
 // };
 
 
-
-// exports.renameFile = async (req, res) => {
-//     const { id } = req.params;
-//     const { newName, roomId } = req.body;
-//     const updated = await File.findByIdAndUpdate(id, { name: newName }, { new: true });
-//     global._io.to(roomId).emit("fileRenamed", updated);
-//     res.json(updated);
-//   };
-
-// exports.uploadFile = async (req, res) => {
-//   try {
-//     const { filename, content,roomId } = req.body;
-//     const result = await cloudinary.uploader.upload_stream(
-//       {
-//         resource_type: "raw",
-//         public_id: `rooms/${roomId}/${filename}`,
-//         overwrite: true
-//       },
-//       (error, result) => {
-//         if (error) return res.status(500).send(error);
-//         res.json(result);
-//       }
-//     );
-//     require('streamifier').createReadStream(Buffer.from(content)).pipe(result);
-//   } catch (err) {
-//     console.error("Upload failed:", err);
-//     res.status(500).json({ message: "Upload failed" });
-//   }
-// }
-
-
 exports.uploadFile = async (req, res) => {
   try {
     const files = req.files;
     const { roomId } = req.body;
-    const paths = JSON.parse(req.body.paths || "[]"); // 👈 parse it
+    const paths = JSON.parse(req.body.paths || "[]");
 
     if (!files || files.length === 0) {
       return res.status(400).json({ message: "No files received" });
@@ -152,76 +113,98 @@ exports.uploadFile = async (req, res) => {
       return res.status(400).json({ message: "Files and paths count mismatch" });
     }
 
-    const folderMap = {};
     const room = await Room.findOne({ roomId });
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    const uploadedFiles = [];
+    const folderMap = {};
+    const limit = pLimit(5); // Limit concurrency to 5 uploads at a time
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-
-      if (!file.buffer || file.buffer.length === 0) {
-        console.warn(`Skipping empty file: ${file.originalname}`);
-        continue;
-      }
-      const fullPath = paths[i]; // 👈 matched from frontend
-
-      const pathParts = fullPath.split("/");
-      const fileName = pathParts.pop();
-
+    // Helper to create folder hierarchy
+    const createFolders = async (pathParts) => {
       let currentParentId = null;
       let currentPath = "";
 
-      // Create folder hierarchy
       for (const part of pathParts) {
         currentPath += (currentPath ? "/" : "") + part;
 
         if (!folderMap[currentPath]) {
-          const newFolder = await File.create({
-            name: part,
-            type: "folder",
+          const existingFolder = await File.findOne({
             path: currentPath,
-            parentId: currentParentId,
+            type: "folder",
             roomId: room._id,
           });
 
-          folderMap[currentPath] = newFolder._id;
-          currentParentId = newFolder._id;
-
-          global._io.to(roomId).emit("folderCreated", newFolder);
+          if (existingFolder) {
+            folderMap[currentPath] = existingFolder._id;
+            currentParentId = existingFolder._id;
+          } else {
+            const newFolder = await File.create({
+              name: part,
+              type: "folder",
+              path: currentPath,
+              parentId: currentParentId,
+              roomId: room._id,
+            });
+            folderMap[currentPath] = newFolder._id;
+            currentParentId = newFolder._id;
+            global._io.to(roomId).emit("folderCreated", newFolder);
+          }
         } else {
           currentParentId = folderMap[currentPath];
         }
       }
+      return currentParentId;
+    };
 
-      // Upload to Cloudinary
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto" },
-          (error, result) => {
-            if (error) return reject(error);
-            resolve(result);
+    // Process each file with concurrency limit
+    const uploadedFiles = await Promise.all(
+      files.map((file, index) =>
+        limit(async () => {
+          if (!file.buffer || file.buffer.length === 0) {
+            console.warn(`Skipping empty file: ${file.originalname}`);
+            return null;
           }
-        );
-        stream.end(file.buffer);
-      });
 
-      const uploadedFile = await File.create({
-        name: fileName,
-        type: "file",
-        path: fullPath,
-        parentId: currentParentId,
-        roomId: room._id,
-        cloudinaryPublicId: uploadResult.public_id,
-        url: uploadResult.secure_url,
-      });
+          const fullPath = paths[index];
+          const pathParts = fullPath.split("/");
+          const fileName = pathParts.pop();
 
-      uploadedFiles.push(uploadedFile);
-      global._io.to(roomId).emit("fileUploaded", uploadedFile);
-    }
+          // Create folder hierarchy and get parentId for this file
+          const parentId = await createFolders(pathParts);
 
-    res.status(200).json({ message: "Uploaded successfully", files: uploadedFiles });
+          // Upload to Cloudinary
+          const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { resource_type: "auto" },
+              (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+              }
+            );
+            stream.end(file.buffer);
+          });
+
+          // Save file record in DB
+          const uploadedFile = await File.create({
+            name: fileName,
+            type: "file",
+            path: fullPath,
+            parentId,
+            roomId: room._id,
+            cloudinaryPublicId: uploadResult.public_id,
+            url: uploadResult.secure_url,
+          });
+
+          global._io.to(roomId).emit("fileUploaded", uploadedFile);
+          return uploadedFile;
+        })
+      )
+    );
+
+    res.status(200).json({
+      message: "Uploaded successfully",
+      files: uploadedFiles.filter(Boolean),
+    });
   } catch (error) {
     console.error("❌ Upload failed:", error);
     res.status(500).json({ message: "Upload failed" });
