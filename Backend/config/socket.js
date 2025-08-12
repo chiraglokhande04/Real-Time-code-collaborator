@@ -291,6 +291,47 @@ const setupSocket = (server) => {
       }
     });
 
+    socket.on("leave-room", async (roomId) => {
+  try {
+    if (!roomId || !socket.user) {
+      console.log("⚠️ Leave room called without roomId or user");
+      return;
+    }
+
+    // Leave the socket.io room
+    socket.leave(roomId);
+    socket.roomId = null; // Clear stored room ID
+
+    // Remove user from the room's members list in DB
+    await Room.findOneAndUpdate(
+      { roomId },
+      { $pull: { members: socket.user._id } }
+    );
+
+    // Fetch updated room members
+    const updatedRoom = await Room.findOne({ roomId }).populate('members', '_id displayName');
+    if (updatedRoom) {
+      const updatedUsers = updatedRoom.members.map(member => ({
+        _id: member._id,
+        username: member.displayName || "Guest",
+      }));
+
+      // Notify others in the room
+      io.to(roomId).emit("update-users", updatedUsers);
+
+      console.log(`🚪 ${socket.user.displayName} left room ${roomId}`);
+    }
+
+    // Notify the client they left successfully
+    socket.emit("room-left", roomId);
+
+  } catch (err) {
+    console.error("❌ Error in leave-room:", err);
+    socket.emit("error", "Failed to leave room");
+  }
+});
+
+
     socket.on("disconnect", async () => {
       console.log(`🔴 Socket Disconnected: ${socket.id}`);
 

@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 import { useSocket } from "../context/socketContext";
 import { useRef } from "react";
 import { uploadToCloudinary } from "../utils/utils";
+import { useNavigate } from "react-router-dom";
 
   import pLimit from "p-limit";
 
@@ -34,7 +35,7 @@ const MainPage = () => {
   //const [fileContentsMap, setFileContentsMap] = useState(new Map());
 
   const socket = useSocket();
-
+  const navigate = useNavigate();
 
   const foldersMap = ydoc.getMap("folders");
   // const fileContentsMap = ydoc.getMap("fileContents");
@@ -321,6 +322,14 @@ const handleUpload = async (e) => {
   };
 
 
+   const handleLeaveRoom = () => {
+    if (socket && id) {
+      socket.emit("leave-room", id);
+      socket.once("room-left", () => {
+        navigate("/logged"); // Redirect to homepage
+      });
+    }
+  };
 
   // Get users in room
   useEffect(() => {
@@ -460,7 +469,7 @@ const handleUpload = async (e) => {
   return (
     <div className="h-screen flex flex-col">
       {/* Navbar */}
-      <NavBar id={id} />
+      <NavBar id={id} leaveRoom={handleLeaveRoom} ydoc ={ydoc} />
 
       <div className="flex h-full overflow-hidden ">
         {/* SlideBar - now using absolute positioning */}
